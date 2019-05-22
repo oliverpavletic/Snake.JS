@@ -81,6 +81,10 @@ window.onload = () => {
     startGame(cells);
 }
 
+// TODO: implement a more robust resizing mechanism
+// If screen is resized, reload the page
+window.onresize = function () { location.reload(); }
+
 // Game Manager:
 function startGame(newCells) {
     let cells = newCells;
@@ -102,7 +106,7 @@ function startGame(newCells) {
         }
     }
 
-    // create the snake
+    // spawn snake
     // for the begining, the snake should just be a block
 }
 
@@ -112,8 +116,6 @@ function startGame(newCells) {
 // If Snake pos = food pos, remove food, respawn food... 
 
 // there should be one source of truth ...
-
-// we should have some mechanism of spawning food 
 
 // Returns window dimension bounds in px
 function getBounds() {
