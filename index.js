@@ -1,9 +1,10 @@
 /* JAVASCRIPT SNAKE by Oliver Pavletic */
 
-const FRAME_INTERVAL = 500; // miliseconds
+const FRAME_INTERVAL = 200; // miliseconds
 const CELL_SIZE = 25;
 const NUM_FOOD_PIECES = 10;
 const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial board?
+const SNAKE_INIT_DIR = "RIGHT";
 const GAME_CONT_COLOR = "black"; // TODO: delete eventually
 const CELL_COLOR_SCHEME = { empty: "white", food: "yellow", snake: "red" };
 let frameRequest = null;
@@ -92,9 +93,10 @@ function startGame(newCells) {
     let cells = newCells;
     let gameWidthInCells = cells.length;
     let gameHeightInCells = cells[0].length;
-    let snakeCoordiantes = spawnSnake();
+    let snakeCoordinates = spawnSnake();
     let foodCoordinates = spawnFood([]);
-    let snakeDirection = "RIGHT";
+    let snakeDirection = SNAKE_INIT_DIR;
+    let snakeDirectionStack = [];
 
     // TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
     // and how to make it difficult to have conflicting 'truths'
@@ -129,7 +131,7 @@ function startGame(newCells) {
             // do-while to avoid duplicate food pieces and collisions with snake coordinates
             do {
                 randomCell = { x: Math.floor(Math.random() * gameWidthInCells), y: Math.floor(Math.random() * gameHeightInCells) };
-            } while ((newFoodCoordinates.concat(snakeCoordiantes)).some(e => e.x === randomCell.x && e.y === randomCell.y));
+            } while ((newFoodCoordinates.concat(snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
 
             cells[randomCell.x][randomCell.y].setStatus("food");
             newFoodCoordinates.push(randomCell);
@@ -137,9 +139,7 @@ function startGame(newCells) {
         return newFoodCoordinates;
     }
 
-    // TODO:
-    // add dir to stack
-    // every frame, take the topmost valid dir and clear the stack!
+    // TODO: dir stack mechanism agility
 
     // add event listener to enable snake direction change
     window.addEventListener("keydown", e => {
@@ -149,19 +149,19 @@ function startGame(newCells) {
             switch (e.key) {
                 case "ArrowUp":
                 case "w":
-                    if (snakeDirection !== "DOWN") snakeDirection = "UP";
+                    snakeDirectionStack.unshift("UP");
                     break;
                 case "ArrowDown":
                 case "s":
-                    if (snakeDirection !== "UP") snakeDirection = "DOWN";
+                    snakeDirectionStack.unshift("DOWN");
                     break;
                 case "ArrowLeft":
                 case "a":
-                    if (snakeDirection !== "RIGHT") snakeDirection = "LEFT";
+                    snakeDirectionStack.unshift("LEFT");
                     break;
                 case "ArrowRight":
                 case "d":
-                    if (snakeDirection !== "LEFT") snakeDirection = "RIGHT";
+                    snakeDirectionStack.unshift("RIGHT");
                     break;
                 case " ":
                     alert("GAME OVER, REFRESH");
@@ -173,9 +173,17 @@ function startGame(newCells) {
 
     // update next frame
     function nextFrame() {
-        const first = snakeCoordiantes[0];
-        const last = snakeCoordiantes[snakeCoordiantes.length - 1];
+        console.log(snakeDirectionStack);
+        const first = snakeCoordinates[0];
+        const last = snakeCoordinates[snakeCoordinates.length - 1];
         let next = first;
+        let prevDirection = snakeDirection;
+
+        do {
+            snakeDirection = snakeDirectionStack.pop();
+        } while (conflict(prevDirection, snakeDirection));
+
+        if (snakeDirection === undefined) snakeDirection = prevDirection;
 
         switch (snakeDirection) {
             case "UP":
@@ -194,13 +202,12 @@ function startGame(newCells) {
         // handle game border collision
         if (next.x > gameWidthInCells - 1 || next.y > gameHeightInCells - 1 || next.y < 0 || next.x < 0) {
             alert("GAME OVER, YOU CRASHED!");
-            console.log(frameRequest);
+
             cancelAnimationFrame(frameRequest);
             return;
         }
         // TODO: handle snake collision
-        if (snakeCoordiantes.some(e => e.x === next.x && e.y === next.y)) {
-            console.log(frameRequest);
+        if (snakeCoordinates.some(e => e.x === next.x && e.y === next.y)) {
             alert("GAME OVER, YOU RAN INTO YOUR OWN SNAKE!");
             cancelAnimationFrame(frameRequest);
             return;
@@ -209,7 +216,7 @@ function startGame(newCells) {
 
         // add next to snake 
         cells[next.x][next.y].setStatus("snake");
-        snakeCoordiantes.unshift(next);
+        snakeCoordinates.unshift(next);
         // handle food collision
         let foodIndex = foodCoordinates.findIndex(e => e.x === next.x && e.y === first.y);
         if (foodIndex !== -1) {
@@ -221,11 +228,19 @@ function startGame(newCells) {
         } else {
             // remove last from snake
             cells[last.x][last.y].setStatus("empty");
-            snakeCoordiantes.pop();
+            snakeCoordinates.pop();
         }
 
 
         setTimeout(() => { frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL)
+
+        function conflict(firstDir, secondDir) {
+            if (firstDir === "UP" && secondDir === "DOWN") return true;
+            if (firstDir === "DOWN" && secondDir === "UP") return true;
+            if (firstDir === "LEFT" && secondDir === "RIGHT") return true;
+            if (firstDir === "RIGHT" && secondDir === "LEFT") return true;
+            return false
+        }
     }
 
     nextFrame();
