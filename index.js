@@ -2,10 +2,20 @@
 
 // TODO: declutter global scope
 
-const FRAME_INTERVAL = 200; // miliseconds
+// TODO: font Press Start 2P
+
+// FEATURES:
+// TODO: animate 'eating' food: food moves through the snake, when it reaches the end it animates from yellow to red
+// TODO: game over screen
+// TODO: pause screen
+// TODO: main menu screen
+// TODO: options
+// TODO: maps/difficulties/etc.
+
+const FRAME_INTERVAL = 50; // miliseconds
 const CELL_SIZE = 25;
-const SCREEN_FACTOR = 2;
-const NUM_FOOD_PIECES = 10;
+const SCREEN_FACTOR = 5;
+const NUM_FOOD_PIECES = 1;
 const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial board?
 const SNAKE_INIT_DIR = "RIGHT";
 const GAME_CONT_COLOR = "black"; // TODO: delete eventually
@@ -49,6 +59,8 @@ class Cell {
 
 // set up the game board and cells
 window.onload = () => {
+    // TODO: clean up this section 
+
     // modify body style
     document.body.style.margin = "0px";
 
@@ -58,12 +70,16 @@ window.onload = () => {
     let screenWidth = bounds.width;
 
     // number of cells vertically and horizontally 
-    let gameHeightInCells = Math.floor(screenHeight / CELL_SIZE) - SCREEN_FACTOR;
-    let gameWidthInCells = Math.floor(screenWidth / CELL_SIZE) - SCREEN_FACTOR;
+    let gameHeightInCells = Math.floor(screenHeight / CELL_SIZE) - (2 * SCREEN_FACTOR);
+    let gameWidthInCells = Math.floor(screenWidth / CELL_SIZE) - (2 * SCREEN_FACTOR);
+
+    // height & width correction
+    let heightCorrection = (screenHeight % CELL_SIZE) / 2;
+    let widthCorrection = (screenWidth % CELL_SIZE) / 2;
 
     // game container dimensions
-    let gameContainerHeight = (gameHeightInCells * CELL_SIZE) + (SCREEN_FACTOR * CELL_SIZE);
-    let gameContainerWidth = (gameWidthInCells * CELL_SIZE) + (SCREEN_FACTOR * CELL_SIZE);
+    let gameContainerHeight = (gameHeightInCells * CELL_SIZE) + (2 * SCREEN_FACTOR * CELL_SIZE) + (2 * heightCorrection);
+    let gameContainerWidth = (gameWidthInCells * CELL_SIZE) + (2 * SCREEN_FACTOR * CELL_SIZE) + (2 * widthCorrection);
 
     // snake container dimensions
     let snakeContainerHeight = gameHeightInCells * CELL_SIZE;
@@ -77,11 +93,22 @@ window.onload = () => {
     gameContainer.style.width = `${gameContainerWidth}px`;
     gameContainer.id = "game-container";
 
+    // define score display
+    let scoreDisplay = document.createElement("div");
+    scoreDisplay.style.position = "absolute";
+    scoreDisplay.style.bottom = `${((SCREEN_FACTOR * CELL_SIZE) + heightCorrection + snakeContainerHeight)}px`;
+    scoreDisplay.style.right = `${((SCREEN_FACTOR * CELL_SIZE) + widthCorrection)}px`;
+    scoreDisplay.style.size = `25px`;
+    scoreDisplay.innerHTML = "SCORE: <span id=\"score\">0</span>";
+    scoreDisplay.style.color = "white";
+    scoreDisplay.background = "red";
+    scoreDisplay.id = "score-display";
+
     // define snake container 
     let snakeContainer = document.createElement("div");
     snakeContainer.style.background = SNAKE_CONT_COLOR;
-    snakeContainer.style.left = `${CELL_SIZE}px`
-    snakeContainer.style.top = `${CELL_SIZE}px`
+    snakeContainer.style.top = `${((SCREEN_FACTOR * CELL_SIZE) + heightCorrection)}px`;
+    snakeContainer.style.left = `${((SCREEN_FACTOR * CELL_SIZE) + widthCorrection)}px`;
     snakeContainer.style.position = "relative";
     snakeContainer.style.height = `${snakeContainerHeight}px`;
     snakeContainer.style.width = `${snakeContainerWidth}px`;
@@ -99,20 +126,23 @@ window.onload = () => {
         }
     }
 
-    // Append snake container to game container
+    // append score display to game container
+    gameContainer.appendChild(scoreDisplay);
+
+    // append snake container to game container
     gameContainer.appendChild(snakeContainer);
 
-    // Append game container to document body
+    // append game container to document body
     document.body.appendChild(gameContainer);
 
-    // Game board is now set up, start game and pass newly created cells
+    // game board is now set up, start game and pass newly created cells
     startGame(cells);
 }
 
 // TODO: implement a more robust resizing mechanism
 
 // If screen is resized, reload the page
-//window.onresize = function () { location.reload(); }
+window.onresize = function () { location.reload(); }
 
 // game manager
 function startGame(newCells) {
@@ -123,6 +153,7 @@ function startGame(newCells) {
     let foodCoordinates = spawnFood([]);
     let snakeDirection = SNAKE_INIT_DIR;
     let snakeDirectionStack = [];
+    let gameScore = 0;
 
     // TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
     // and how to make it difficult to have conflicting 'truths'
@@ -148,14 +179,16 @@ function startGame(newCells) {
         return coordinates;
     }
 
+    // TODO: test issue with food respawn... not always respawning all food
+
     // spawn intial food
     function spawnFood(oldFoodCoordinates) {
         let newFoodCoordinates = oldFoodCoordinates;
-        const numExistingFoodPieces = newFoodCoordinates.length;
+        let numExistingFoodPieces = newFoodCoordinates.length;
+        let randomCell = null;
 
         // spawn as many food pieces s.t the total pieces of food is always equal to NUM_FOOD_PIECES
         for (var i = 0; i < NUM_FOOD_PIECES - numExistingFoodPieces; i++) {
-            let randomCell = null;
 
             // do-while to avoid duplicate food pieces and collisions with snake coordinates
             do {
@@ -253,7 +286,8 @@ function startGame(newCells) {
             foodCoordinates.splice(foodIndex, 1);
             // respawn food
             foodCoordinates = spawnFood(foodCoordinates);
-            // TODO: update score 
+            // update score 
+            document.getElementById('score').innerHTML = ++gameScore;
         } else {
             // no food collision: remove last cell from snake
             cells[last.x][last.y].setStatus("empty");
