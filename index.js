@@ -4,10 +4,12 @@
 
 const FRAME_INTERVAL = 200; // miliseconds
 const CELL_SIZE = 25;
+const SCREEN_FACTOR = 2;
 const NUM_FOOD_PIECES = 10;
 const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial board?
 const SNAKE_INIT_DIR = "RIGHT";
 const GAME_CONT_COLOR = "black"; // TODO: delete eventually
+const SNAKE_CONT_COLOR = "black"; // TODO: delete eventually
 const CELL_COLOR_SCHEME = { empty: "white", food: "yellow", snake: "red" };
 let frameRequest = null;
 
@@ -39,6 +41,7 @@ class Cell {
         div.style.left = `${this.x * this.size}px`;
         div.style.top = `${this.y * this.size}px`;
         div.style.border = "solid";
+        // div.className = "cell" TODO: modify using style sheet selectors!
         div.id = this.id;
         return div;
     }
@@ -46,27 +49,45 @@ class Cell {
 
 // set up the game board and cells
 window.onload = () => {
-    // Get screen dimensions
+    // modify body style
+    document.body.style.margin = "0px";
+
+    // get screen dimensions
     let bounds = getBounds();
     let screenHeight = bounds.height;
     let screenWidth = bounds.width;
 
-    // Number of cells vertically and horizontally 
-    let gameHeightInCells = Math.floor(screenHeight / CELL_SIZE);
-    let gameWidthInCells = Math.floor(screenWidth / CELL_SIZE);
+    // number of cells vertically and horizontally 
+    let gameHeightInCells = Math.floor(screenHeight / CELL_SIZE) - SCREEN_FACTOR;
+    let gameWidthInCells = Math.floor(screenWidth / CELL_SIZE) - SCREEN_FACTOR;
 
-    // Game container dimensions
-    let gameContainerHeight = gameHeightInCells * CELL_SIZE;
-    let gameContainerWidth = gameWidthInCells * CELL_SIZE;
+    // game container dimensions
+    let gameContainerHeight = (gameHeightInCells * CELL_SIZE) + (SCREEN_FACTOR * CELL_SIZE);
+    let gameContainerWidth = (gameWidthInCells * CELL_SIZE) + (SCREEN_FACTOR * CELL_SIZE);
 
-    // Define game container 
+    // snake container dimensions
+    let snakeContainerHeight = gameHeightInCells * CELL_SIZE;
+    let snakeContainerWidth = gameWidthInCells * CELL_SIZE;
+
+    // define game container 
     let gameContainer = document.createElement("div");
     gameContainer.style.background = GAME_CONT_COLOR;
+    gameContainer.style.position = "relative";
     gameContainer.style.height = `${gameContainerHeight}px`;
     gameContainer.style.width = `${gameContainerWidth}px`;
     gameContainer.id = "game-container";
 
-    // Define cell matrix
+    // define snake container 
+    let snakeContainer = document.createElement("div");
+    snakeContainer.style.background = SNAKE_CONT_COLOR;
+    snakeContainer.style.left = `${CELL_SIZE}px`
+    snakeContainer.style.top = `${CELL_SIZE}px`
+    snakeContainer.style.position = "relative";
+    snakeContainer.style.height = `${snakeContainerHeight}px`;
+    snakeContainer.style.width = `${snakeContainerWidth}px`;
+    snakeContainer.id = "snake-container";
+
+    // define cell matrix
     let cells = [];
     for (var i = 0; i < gameWidthInCells; i++) {
         cells[i] = [];
@@ -74,9 +95,12 @@ window.onload = () => {
             // assign cell to corresponding index in the cells matrix
             cells[i][j] = new Cell(i, j, CELL_SIZE, "empty");
             // append newly created cell to game container
-            gameContainer.appendChild(cells[i][j].html);
+            snakeContainer.appendChild(cells[i][j].html);
         }
     }
+
+    // Append snake container to game container
+    gameContainer.appendChild(snakeContainer);
 
     // Append game container to document body
     document.body.appendChild(gameContainer);
@@ -88,7 +112,7 @@ window.onload = () => {
 // TODO: implement a more robust resizing mechanism
 
 // If screen is resized, reload the page
-window.onresize = function () { location.reload(); }
+//window.onresize = function () { location.reload(); }
 
 // game manager
 function startGame(newCells) {
@@ -112,12 +136,12 @@ function startGame(newCells) {
 
         // add center cell to snake
         let center = { x: Math.floor(gameWidthInCells / 2), y: Math.floor(gameHeightInCells / 2) };
-        cells[center.x][center.y].setStatus("snake");
+        cells[center.x][center.y].setStatus("snake"); // FLAG: refactor
         coordinates.push(center);
 
         // add remaining cells to snake
         for (var i = 0; i < SNAKE_INIT_SIZE - 1; i++) {
-            cells[center.x - (i + 1)][center.y].setStatus("snake");
+            cells[center.x - (i + 1)][center.y].setStatus("snake"); // FLAG: refactor
             coordinates.push({ x: center.x - (i + 1), y: center.y });
         }
 
@@ -138,7 +162,7 @@ function startGame(newCells) {
                 randomCell = { x: Math.floor(Math.random() * gameWidthInCells), y: Math.floor(Math.random() * gameHeightInCells) };
             } while ((newFoodCoordinates.concat(snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
 
-            cells[randomCell.x][randomCell.y].setStatus("food");
+            cells[randomCell.x][randomCell.y].setStatus("food"); // FLAG: refactor
             newFoodCoordinates.push(randomCell);
         }
 
