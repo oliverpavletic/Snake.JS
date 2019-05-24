@@ -1,5 +1,7 @@
 /* JAVASCRIPT SNAKE by Oliver Pavletic */
 
+// TODO: declutter global scope
+
 const FRAME_INTERVAL = 200; // miliseconds
 const CELL_SIZE = 25;
 const NUM_FOOD_PIECES = 10;
@@ -14,8 +16,7 @@ class Cell {
         this.x = x;
         this.y = y;
         this.size = size;
-        // TODO: make this an enum with symbols?
-        this.status = status; // empty, food, or snake
+        this.status = status; // empty, food or snake 
         this.id = `cell-${x}-${y}`; // DOM id
     }
 
@@ -43,7 +44,7 @@ class Cell {
     }
 }
 
-// Set up the game board and cells
+// set up the game board and cells
 window.onload = () => {
     // Get screen dimensions
     let bounds = getBounds();
@@ -71,7 +72,7 @@ window.onload = () => {
         cells[i] = [];
         for (var j = 0; j < gameHeightInCells; j++) {
             // assign cell to corresponding index in the cells matrix
-            cells[i][j] = new Cell(i, j, CELL_SIZE, "empty", CELL_COLOR_SCHEME);
+            cells[i][j] = new Cell(i, j, CELL_SIZE, "empty");
             // append newly created cell to game container
             gameContainer.appendChild(cells[i][j].html);
         }
@@ -85,6 +86,7 @@ window.onload = () => {
 }
 
 // TODO: implement a more robust resizing mechanism
+
 // If screen is resized, reload the page
 window.onresize = function () { location.reload(); }
 
@@ -103,9 +105,11 @@ function startGame(newCells) {
     // have one function where changing the status of a given cell also adds it to coordinates and such
 
     // TODO: refactor spawnSnake() to make it more stateless and so it can be used in the frame updating? well that would be more inefficent so idk..
+
     // spawn snake 
     function spawnSnake() {
         let coordinates = [];
+
         // add center cell to snake
         let center = { x: Math.floor(gameWidthInCells / 2), y: Math.floor(gameHeightInCells / 2) };
         cells[center.x][center.y].setStatus("snake");
@@ -122,12 +126,13 @@ function startGame(newCells) {
 
     // spawn intial food
     function spawnFood(oldFoodCoordinates) {
-        // if we already have food coordinates, use them
         let newFoodCoordinates = oldFoodCoordinates;
         const numExistingFoodPieces = newFoodCoordinates.length;
+
         // spawn as many food pieces s.t the total pieces of food is always equal to NUM_FOOD_PIECES
         for (var i = 0; i < NUM_FOOD_PIECES - numExistingFoodPieces; i++) {
-            let randomCell = { x: 0, y: 0 };
+            let randomCell = null;
+
             // do-while to avoid duplicate food pieces and collisions with snake coordinates
             do {
                 randomCell = { x: Math.floor(Math.random() * gameWidthInCells), y: Math.floor(Math.random() * gameHeightInCells) };
@@ -136,10 +141,9 @@ function startGame(newCells) {
             cells[randomCell.x][randomCell.y].setStatus("food");
             newFoodCoordinates.push(randomCell);
         }
+
         return newFoodCoordinates;
     }
-
-    // TODO: dir stack mechanism agility
 
     // add event listener to enable snake direction change
     window.addEventListener("keydown", e => {
@@ -173,7 +177,6 @@ function startGame(newCells) {
 
     // update next frame
     function nextFrame() {
-        console.log(snakeDirectionStack);
         const first = snakeCoordinates[0];
         const last = snakeCoordinates[snakeCoordinates.length - 1];
         let next = first;
@@ -199,26 +202,28 @@ function startGame(newCells) {
                 next = { x: first.x + 1, y: first.y };
                 break;
         }
+
         // handle game border collision
         if (next.x > gameWidthInCells - 1 || next.y > gameHeightInCells - 1 || next.y < 0 || next.x < 0) {
             alert("GAME OVER, YOU CRASHED!");
-
             cancelAnimationFrame(frameRequest);
             return;
         }
-        // TODO: handle snake collision
+
+        // handle snake collision
         if (snakeCoordinates.some(e => e.x === next.x && e.y === next.y)) {
             alert("GAME OVER, YOU RAN INTO YOUR OWN SNAKE!");
             cancelAnimationFrame(frameRequest);
             return;
         }
-        // TODO: press up and left really fast... it lets you go back on your own snake!
 
-        // add next to snake 
+        // no fatal collisions, so add next cell to snake 
         cells[next.x][next.y].setStatus("snake");
         snakeCoordinates.unshift(next);
-        // handle food collision
+
+        // handle food collision       
         let foodIndex = foodCoordinates.findIndex(e => e.x === next.x && e.y === first.y);
+
         if (foodIndex !== -1) {
             // remove food
             foodCoordinates.splice(foodIndex, 1);
@@ -226,14 +231,15 @@ function startGame(newCells) {
             foodCoordinates = spawnFood(foodCoordinates);
             // TODO: update score 
         } else {
-            // remove last from snake
+            // no food collision: remove last cell from snake
             cells[last.x][last.y].setStatus("empty");
             snakeCoordinates.pop();
         }
 
-
+        // request new frame every FRAME_INTERVAL
         setTimeout(() => { frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL)
 
+        // helper function: return true if the direction arguments conflict, otherwise return false (even if an argument is undefined)
         function conflict(firstDir, secondDir) {
             if (firstDir === "UP" && secondDir === "DOWN") return true;
             if (firstDir === "DOWN" && secondDir === "UP") return true;
@@ -243,18 +249,11 @@ function startGame(newCells) {
         }
     }
 
+    // request first frame
     nextFrame();
 }
 
-
-// Spawn Food
-// Spawn Snake
-// Move Snake
-// If Snake pos = food pos, remove food, respawn food... 
-
-// there should be one source of truth ...
-
-// Returns window dimension bounds in px
+// returns window dimension bounds in px
 function getBounds() {
     var e = window,
         a = "inner";
