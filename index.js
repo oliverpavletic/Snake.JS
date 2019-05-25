@@ -15,7 +15,7 @@
 const FRAME_INTERVAL = 100; // miliseconds
 const CELL_SIZE = 25;
 const SCREEN_FACTOR = 5;
-const NUM_FOOD_PIECES = 1;
+const NUM_FOOD_PIECES = 10;
 const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial board?
 const SNAKE_INIT_DIR = "RIGHT";
 const GAME_CONT_COLOR = "black"; // TODO: delete eventually
@@ -290,11 +290,19 @@ function startGame(newCells) {
             document.getElementById('score').innerHTML = ++gameScore;
             // TODO: digest animation
             // make current cell turn SPECIAL COLOR until to its left is red, and right is white!
+            cells[next.x][next.y].setStatus("digest");
+        }
+
+        if (cells[last.x][last.y].status === "digest") {
+            cells[last.x][last.y].setStatus("snake");
         } else {
-            // no food collision: remove last cell from snake
+            // remove last cell from snake
             cells[last.x][last.y].setStatus("empty");
             snakeCoordinates.pop();
         }
+
+
+
 
         // request new frame every FRAME_INTERVAL
         setTimeout(() => { frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL)
