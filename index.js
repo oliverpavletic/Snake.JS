@@ -12,7 +12,7 @@
 // TODO: options
 // TODO: maps/difficulties/etc.
 
-const FRAME_INTERVAL = 50; // miliseconds
+const FRAME_INTERVAL = 100; // miliseconds
 const CELL_SIZE = 25;
 const SCREEN_FACTOR = 5;
 const NUM_FOOD_PIECES = 1;
@@ -279,7 +279,7 @@ function startGame(newCells) {
         snakeCoordinates.unshift(next);
 
         // handle food collision       
-        let foodIndex = foodCoordinates.findIndex(e => e.x === next.x && e.y === first.y);
+        let foodIndex = foodCoordinates.findIndex(e => e.x === next.x && e.y === next.y);
 
         if (foodIndex !== -1) {
             // remove food
