@@ -234,6 +234,7 @@ function startGame(newCells) {
 
     // update next frame
     function nextFrame() {
+        // TODO: more intelligent way of declaring first/last... just as cells? how do we use them here
         const first = snakeCoordinates[0];
         const last = snakeCoordinates[snakeCoordinates.length - 1];
         let next = first;
@@ -300,9 +301,6 @@ function startGame(newCells) {
             cells[last.x][last.y].setStatus("empty");
             snakeCoordinates.pop();
         }
-
-
-
 
         // request new frame every FRAME_INTERVAL
         setTimeout(() => { frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL)
