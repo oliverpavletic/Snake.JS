@@ -20,7 +20,7 @@ const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial boar
 const SNAKE_INIT_DIR = "RIGHT";
 const GAME_CONT_COLOR = "black"; // TODO: delete eventually
 const SNAKE_CONT_COLOR = "black"; // TODO: delete eventually
-const CELL_COLOR_SCHEME = { empty: "white", food: "yellow", snake: "red" };
+const CELL_COLOR_SCHEME = { empty: "white", food: "yellow", snake: "red", digest: "green" };
 let frameRequest = null;
 
 class Cell {
@@ -51,7 +51,7 @@ class Cell {
         div.style.left = `${this.x * this.size}px`;
         div.style.top = `${this.y * this.size}px`;
         div.style.border = "solid";
-        // div.className = "cell" TODO: modify using style sheet selectors!
+        // div.className = "cell" TODO: modify using style sheet selectors! reduce clutter & repition!
         div.id = this.id;
         return div;
     }
@@ -288,6 +288,8 @@ function startGame(newCells) {
             foodCoordinates = spawnFood(foodCoordinates);
             // update score 
             document.getElementById('score').innerHTML = ++gameScore;
+            // TODO: digest animation
+            // make current cell turn SPECIAL COLOR until to its left is red, and right is white!
         } else {
             // no food collision: remove last cell from snake
             cells[last.x][last.y].setStatus("empty");
@@ -296,19 +298,20 @@ function startGame(newCells) {
 
         // request new frame every FRAME_INTERVAL
         setTimeout(() => { frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL)
-
-        // helper function: return true if the direction arguments conflict, otherwise return false (even if an argument is undefined)
-        function conflict(firstDir, secondDir) {
-            if (firstDir === "UP" && secondDir === "DOWN") return true;
-            if (firstDir === "DOWN" && secondDir === "UP") return true;
-            if (firstDir === "LEFT" && secondDir === "RIGHT") return true;
-            if (firstDir === "RIGHT" && secondDir === "LEFT") return true;
-            return false
-        }
     }
 
     // request first frame
     nextFrame();
+}
+
+// TODO: reduce the need for this by instead representing directions with numbers.. or even enum! doing some div or mod stuff
+// helper function: return true if the direction arguments conflict, otherwise return false (even if an argument is undefined)
+function conflict(firstDir, secondDir) {
+    if (firstDir === "UP" && secondDir === "DOWN") return true;
+    if (firstDir === "DOWN" && secondDir === "UP") return true;
+    if (firstDir === "LEFT" && secondDir === "RIGHT") return true;
+    if (firstDir === "RIGHT" && secondDir === "LEFT") return true;
+    return false
 }
 
 // returns window dimension bounds in px
