@@ -13,6 +13,7 @@
 // TODO: maps/difficulties/etc.
 
 const FRAME_INTERVAL = 100; // miliseconds
+const DIGEST_FRAME_INTERVAL = 1; // change color every DIGEST_FRAME_INTERVAL frames
 const CELL_SIZE = 25;
 const SCREEN_FACTOR = 5;
 const NUM_FOOD_PIECES = 10;
@@ -20,7 +21,7 @@ const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial boar
 const SNAKE_INIT_DIR = "RIGHT";
 const GAME_CONT_COLOR = "black"; // TODO: delete eventually
 const SNAKE_CONT_COLOR = "black"; // TODO: delete eventually
-const CELL_COLOR_SCHEME = { empty: "white", food: "yellow", snake: "red", digest: "green" };
+const CELL_COLOR_SCHEME = { empty: "white", food: "yellow", snake: "red", digest: "yellow" };
 let frameRequest = null;
 
 class Cell {
@@ -30,12 +31,26 @@ class Cell {
         this.size = size;
         this.status = status; // empty, food or snake 
         this.id = `cell-${x}-${y}`; // DOM id
+        this.digestFrame = 0;
     }
 
     setStatus(newStatus) {
         this.status = newStatus;
         let cell = document.getElementById(this.id);
         cell.style.background = CELL_COLOR_SCHEME[this.status];
+    }
+
+    toggleDigest() {
+        if (this.status === "digest" && this.digestFrame % DIGEST_FRAME_INTERVAL === 0) {
+            let cell = document.getElementById(this.id);
+            let currColor = cell.style.background;
+
+            if (currColor === CELL_COLOR_SCHEME["digest"]) {
+                cell.style.background = CELL_COLOR_SCHEME["snake"];
+            } else {
+                cell.style.background = CELL_COLOR_SCHEME["digest"];
+            }
+        }
     }
 
     get html() {
@@ -151,6 +166,7 @@ function startGame(newCells) {
     let gameHeightInCells = cells[0].length;
     let snakeCoordinates = spawnSnake();
     let foodCoordinates = spawnFood([]);
+    let digestingCoordinates = [];
     let snakeDirection = SNAKE_INIT_DIR;
     let snakeDirectionStack = [];
     let gameScore = 0;
@@ -289,16 +305,30 @@ function startGame(newCells) {
             foodCoordinates = spawnFood(foodCoordinates);
             // update score 
             document.getElementById('score').innerHTML = ++gameScore;
-            // TODO: digest animation
-            // make current cell turn SPECIAL COLOR until to its left is red, and right is white!
+            // start digest animation
             cells[next.x][next.y].setStatus("digest");
+            digestingCoordinates.unshift(next);
         }
 
-        if (cells[last.x][last.y].status === "digest") {
-            cells[last.x][last.y].setStatus("snake");
+        let curr = null;
+
+        for (var i = 0; i < digestingCoordinates.length; i++) {
+            curr = digestingCoordinates[i];
+            cells[curr.x][curr.y].toggleDigest();
+            cells[curr.x][curr.y].digestFrame++;
+        }
+
+
+        let lastCell = cells[last.x][last.y];
+
+        // end digest animation
+        if (lastCell.status === "digest") {
+            lastCell.digestFrame = 0;
+            digestingCoordinates.pop();
+            lastCell.setStatus("snake");
         } else {
             // remove last cell from snake
-            cells[last.x][last.y].setStatus("empty");
+            lastCell.setStatus("empty");
             snakeCoordinates.pop();
         }
 
