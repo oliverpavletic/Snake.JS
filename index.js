@@ -13,12 +13,12 @@
 // TODO: maps/difficulties/etc.
 
 const FRAME_INTERVAL = 100; // miliseconds
-const CELL_SIZE = 25;
-const SCREEN_FACTOR = 5;
+const GAME_DIMS = { HEIGHT_IN_CELLS: 27, WIDTH_IN_CELLS: 48, MARGIN_IN_CELLS: 5, ASPECT_RATIO: (16 / 9) };
+// const CELL_SIZE = 25; NO LONGER NEEDED, cell size now dependent on screen
 const NUM_FOOD_PIECES = 1;
 const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial board?
 const SNAKE_INIT_DIR = "RIGHT";
-const GAME_CONT_COLOR = "black"; // TODO: delete eventually
+const GAME_CONT_COLOR = "grey"; // TODO: delete eventually
 const SNAKE_CONT_COLOR = "black"; // TODO: delete eventually
 const CELL_COLOR_SCHEME = { empty: "white", food: "yellow", snake: "red", digest: "green" };
 let frameRequest = null;
@@ -50,7 +50,7 @@ class Cell {
         div.style.position = "absolute";
         div.style.left = `${this.x * this.size}px`;
         div.style.top = `${this.y * this.size}px`;
-        div.style.border = "solid";
+        //div.style.border = "solid";
         // div.className = "cell" TODO: modify using style sheet selectors! reduce clutter & repition!
         div.id = this.id;
         return div;
@@ -59,46 +59,77 @@ class Cell {
 
 // set up the game board and cells
 window.onload = () => {
-    // TODO: clean up this section 
+    // TODO!!: clean up this section 
+    // TODO: investiage percentages to make this easier!!!
+
 
     // modify body style
     document.body.style.margin = "0px";
 
-    // get screen dimensions
+    // get screen dimensions (px)
     let bounds = getBounds();
     let screenHeight = bounds.height;
     let screenWidth = bounds.width;
 
-    // number of cells vertically and horizontally 
-    let gameHeightInCells = Math.floor(screenHeight / CELL_SIZE) - (2 * SCREEN_FACTOR);
-    let gameWidthInCells = Math.floor(screenWidth / CELL_SIZE) - (2 * SCREEN_FACTOR);
+    // TODO: the cell size should be defined by EITHER width or height depending on if the 
+    // ratio is above 16:9 or below
+    let screenAspectRatio = screenWidth / screenHeight;
+    let gameAspectRation = GAME_DIMS.WIDTH_IN_CELLS / GAME_DIMS.HEIGHT_IN_CELLS;
 
-    // height & width correction
-    let heightCorrection = (screenHeight % CELL_SIZE) / 2;
-    let widthCorrection = (screenWidth % CELL_SIZE) / 2;
+    let totalWidthInCells = null;
+    let totalHeightInCells = null;
+    let cellSize = null;
+    let heightCorrection = 0;
+    let widthCorrection = 0;
+    let topMargin = 0;
+    let sideMargin = 0;
 
-    // game container dimensions
-    let gameContainerHeight = (gameHeightInCells * CELL_SIZE) + (2 * SCREEN_FACTOR * CELL_SIZE) + (2 * heightCorrection);
-    let gameContainerWidth = (gameWidthInCells * CELL_SIZE) + (2 * SCREEN_FACTOR * CELL_SIZE) + (2 * widthCorrection);
+    // max out the height, compensate the width
+    if (gameAspectRation < screenAspectRatio) {
+        // total height (cells)
+        totalHeightInCells = GAME_DIMS.HEIGHT_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
+        // cell size (px)
+        cellSize = Math.floor(screenHeight / totalHeightInCells);
+        // width correction (px)
+        widthCorrection = screenWidth - (GAME_DIMS.WIDTH_IN_CELLS * cellSize);
+        // top
+        topMargin = GAME_DIMS.MARGIN_IN_CELLS * cellSize;
+        // side
+        sideMargin = widthCorrection / 2;
+        console.log("1");
+    } else {
+        // total width (cells)
+        totalWidthInCells = GAME_DIMS.WIDTH_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
+        // cell size (px)
+        cellSize = Math.floor(screenWidth / totalWidthInCells);
+        // height correction
+        heightCorrection = screenHeight - (GAME_DIMS.HEIGHT_IN_CELLS * cellSize);
+        // top
+        topMargin = heightCorrection / 2;
+        // side
+        sideMargin = GAME_DIMS.MARGIN_IN_CELLS * cellSize;
+        console.log("2");
+    }
 
-    // snake container dimensions
-    let snakeContainerHeight = gameHeightInCells * CELL_SIZE;
-    let snakeContainerWidth = gameWidthInCells * CELL_SIZE;
+    console.log(`Screen Height: ${screenHeight}`);
+    console.log(`Total Height (cells) ${totalHeightInCells}`);
+    console.log(`Cell size: ${cellSize}`);
+    console.log(`Top Margin: ${topMargin}`);
 
     // define game container 
     let gameContainer = document.createElement("div");
     gameContainer.style.background = GAME_CONT_COLOR;
     gameContainer.style.position = "relative";
-    gameContainer.style.height = `${gameContainerHeight}px`;
-    gameContainer.style.width = `${gameContainerWidth}px`;
+    gameContainer.style.height = `${screenHeight}px`;
+    gameContainer.style.width = `${screenWidth}px`;
     gameContainer.id = "game-container";
 
     // define score display
     let scoreDisplay = document.createElement("div");
     scoreDisplay.style.position = "absolute";
-    scoreDisplay.style.bottom = `${((SCREEN_FACTOR * CELL_SIZE) + heightCorrection + snakeContainerHeight)}px`;
-    scoreDisplay.style.right = `${((SCREEN_FACTOR * CELL_SIZE) + widthCorrection)}px`;
-    scoreDisplay.style.size = `25px`;
+    scoreDisplay.style.bottom = `${screenHeight}px`;
+    scoreDisplay.style.right = `${screenWidth - (sideMargin + (cellSize * GAME_DIMS.WIDTH_IN_CELLS))}px`;
+    scoreDisplay.style.fontSize = `${cellSize}px`;
     scoreDisplay.innerHTML = "SCORE: <span id=\"score\">0</span>";
     scoreDisplay.style.color = "white";
     scoreDisplay.background = "red";
@@ -107,20 +138,19 @@ window.onload = () => {
     // define snake container 
     let snakeContainer = document.createElement("div");
     snakeContainer.style.background = SNAKE_CONT_COLOR;
-    snakeContainer.style.top = `${((SCREEN_FACTOR * CELL_SIZE) + heightCorrection)}px`;
-    snakeContainer.style.left = `${((SCREEN_FACTOR * CELL_SIZE) + widthCorrection)}px`;
+    snakeContainer.style.top = `${topMargin}px`;
+    snakeContainer.style.left = `${sideMargin}px`;
     snakeContainer.style.position = "relative";
-    snakeContainer.style.height = `${snakeContainerHeight}px`;
-    snakeContainer.style.width = `${snakeContainerWidth}px`;
+    snakeContainer.style.display = "inline-block";
     snakeContainer.id = "snake-container";
 
     // define cell matrix
     let cells = [];
-    for (var i = 0; i < gameWidthInCells; i++) {
+    for (var i = 0; i < GAME_DIMS.WIDTH_IN_CELLS; i++) {
         cells[i] = [];
-        for (var j = 0; j < gameHeightInCells; j++) {
+        for (var j = 0; j < GAME_DIMS.HEIGHT_IN_CELLS; j++) {
             // assign cell to corresponding index in the cells matrix
-            cells[i][j] = new Cell(i, j, CELL_SIZE, "empty");
+            cells[i][j] = new Cell(i, j, cellSize, "empty");
             // append newly created cell to game container
             snakeContainer.appendChild(cells[i][j].html);
         }
@@ -142,7 +172,7 @@ window.onload = () => {
 // TODO: implement a more robust resizing mechanism
 
 // If screen is resized, reload the page
-window.onresize = function () { location.reload(); }
+//window.onresize = function () { location.reload(); }
 
 // game manager
 function startGame(newCells) {
