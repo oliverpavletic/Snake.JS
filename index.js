@@ -268,10 +268,10 @@ function startGame(newCells) {
         const last = snakeCoordinates[snakeCoordinates.length - 1];
         let next = first;
         let prevDirection = snakeDirection;
-
+    
         do {
-            snakeDirection = snakeDirectionStack.pop();
-        } while (conflict(prevDirection, snakeDirection));
+                snakeDirection = snakeDirectionStack.pop();
+            } while (conflict(prevDirection, snakeDirection));
 
         if (snakeDirection === undefined) snakeDirection = prevDirection;
 
