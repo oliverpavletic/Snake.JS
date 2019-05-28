@@ -13,8 +13,6 @@
 // TODO: maps/difficulties/etc.
 
 const FRAME_INTERVAL = 100; // miliseconds
-const CELL_SIZE = 25;
-const SCREEN_FACTOR = 5;
 const NUM_FOOD_PIECES = 1;
 const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial board?
 const SNAKE_INIT_DIR = "RIGHT";
