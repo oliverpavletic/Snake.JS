@@ -58,6 +58,8 @@ class Cell {
 // set up the game board and cells
 window.onload = () => {
     // TODO: clean up this section 
+    // 16 / 9 
+    // 48 / 27
 
     // modify body style
     document.body.style.margin = "0px";
@@ -143,132 +145,132 @@ window.onload = () => {
 window.onresize = function () { location.reload(); }
 
 // game manager
-function startGame(newCells) {
+ startGame(newCells) {
     let cells = newCells;
     let gameWidthInCells = cells.length;
-    let gameHeightInCells = cells[0].length;
+let gameHeightInCells = cells[0].length;
     let snakeCoordinates = spawnSnake();
-    let foodCoordinates = spawnFood([]);
-    let snakeDirection = SNAKE_INIT_DIR;
-    let snakeDirectionStack = [];
-    let gameScore = 0;
-
+let foodCoordinates = spawnFood([]);
+let snakeDirection = SNAKE_INIT_DIR;
+    snakeDirectionStack = [];
+    gameScore = 0;
+    
     // TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
-    // and how to make it difficult to have conflicting 'truths'
-    // have one function where changing the status of a given cell also adds it to coordinates and such
+    nd how to make it difficult to have conflicting 'truths'
+    ave one function where changing the status of a given cell also adds it to coordinates and such
 
-    // TODO: refactor spawnSnake() to make it more stateless and so it can be used in the frame updating? well that would be more inefficent so idk..
-
-    // spawn snake 
-    function spawnSnake() {
+         refactor spawnSnake() to make it more stateless and so it can be used in the frame updating? well that would be more inefficent so idk..
+        
+            ke 
+         spawnSnake() {
         let coordinates = [];
-
-        // add center cell to snake
-        let center = { x: Math.floor(gameWidthInCells / 2), y: Math.floor(gameHeightInCells / 2) };
+        
+        dd center cell to snake
+    let center = { x: Math.floor(gameWidthInCells / 2), y: Math.floor(gameHeightInCells / 2) };
         cells[center.x][center.y].setStatus("snake"); // FLAG: refactor
-        coordinates.push(center);
+    coordinates.push(center);
 
         // add remaining cells to snake
-        for (var i = 0; i < SNAKE_INIT_SIZE - 1; i++) {
-            cells[center.x - (i + 1)][center.y].setStatus("snake"); // FLAG: refactor
-            coordinates.push({ x: center.x - (i + 1), y: center.y });
-        }
-
-        return coordinates;
+    for (var i = 0; i < SNAKE_INIT_SIZE - 1; i++) {
+        cells[center.x - (i + 1)][center.y].setStatus("snake"); // FLAG: refactor
+        coordinates.push({ x: center.x - (i + 1), y: center.y });
+    }
+        
+        rn coordinates;
+            
+            
+                sue with food respawn... not always respawning all food
+                
+            ial food
+            wnFood(oldFoodCoordinates) {
+                oordinates = oldFoodCoordinates;
+                ingFoodPieces = newFoodCoordinates.length;
+            omCell = null;
+            
+                many food pieces s.t the total pieces of food is always equal to NUM_FOOD_PIECES
+                 0; i < NUM_FOOD_PIECES - numExistingFoodPieces; i++) {
+            
+            o-while to avoid duplicate food pieces and collisions with snake coordinates
+                
+                omCell = { x: Math.floor(Math.random() * gameWidthInCells), y: Math.floor(Math.random() * gameHeightInCells) };
+            ile ((newFoodCoordinates.concat(snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
+                
+                ndomCell.x][randomCell.y].setStatus("food"); // FLAG: refactor
+                oordinates.push(randomCell);
+        
+    
+    return newFoodCoordinates;
     }
 
-    // TODO: test issue with food respawn... not always respawning all food
-
-    // spawn intial food
-    function spawnFood(oldFoodCoordinates) {
-        let newFoodCoordinates = oldFoodCoordinates;
-        let numExistingFoodPieces = newFoodCoordinates.length;
-        let randomCell = null;
-
-        // spawn as many food pieces s.t the total pieces of food is always equal to NUM_FOOD_PIECES
-        for (var i = 0; i < NUM_FOOD_PIECES - numExistingFoodPieces; i++) {
-
-            // do-while to avoid duplicate food pieces and collisions with snake coordinates
-            do {
-                randomCell = { x: Math.floor(Math.random() * gameWidthInCells), y: Math.floor(Math.random() * gameHeightInCells) };
-            } while ((newFoodCoordinates.concat(snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
-
-            cells[randomCell.x][randomCell.y].setStatus("food"); // FLAG: refactor
-            newFoodCoordinates.push(randomCell);
-        }
-
-        return newFoodCoordinates;
-    }
-
-    // add event listener to enable snake direction change
-    window.addEventListener("keydown", e => {
-        // button is not held down such that it is automatically repeating
-        if (!e.repeat) {
-            // arrow keys and WASD
+// add event listener to enable snake direction change
+    ow.addEventListener("keydown", e => {
+    // button is not held down such that it is automatically repeating
+    if (!e.repeat) {
+        // arrow keys and WASD
             switch (e.key) {
-                case "ArrowUp":
-                case "w":
-                    snakeDirectionStack.unshift("UP");
+            case "ArrowUp":
+            case "w":
+                snakeDirectionStack.unshift("UP");
                     break;
-                case "ArrowDown":
+            case "ArrowDown":
                 case "s":
-                    snakeDirectionStack.unshift("DOWN");
-                    break;
-                case "ArrowLeft":
-                case "a":
-                    snakeDirectionStack.unshift("LEFT");
-                    break;
-                case "ArrowRight":
-                case "d":
-                    snakeDirectionStack.unshift("RIGHT");
-                    break;
-                case " ":
-                    alert("GAME OVER, REFRESH");
-                    stop();
-                    break;
+                snakeDirectionStack.unshift("DOWN");
+                break;
+            case "ArrowLeft":
+            case "a":
+                snakeDirectionStack.unshift("LEFT");
+                break;
+            case "ArrowRight":
+            case "d":
+                snakeDirectionStack.unshift("RIGHT");
+                break;
+            case " ":
+                alert("GAME OVER, REFRESH");
+                stop();
+                break;
             }
-        }
-    });
-
-    // update next frame
-    function nextFrame() {
-        const first = snakeCoordinates[0];
+    }
+    
+        
+        e next frame
+         nextFrame() {
+    const first = snakeCoordinates[0];
         const last = snakeCoordinates[snakeCoordinates.length - 1];
-        let next = first;
-        let prevDirection = snakeDirection;
+    let next = first;
+    let prevDirection = snakeDirection;
+        
+        
+        snakeDirection = snakeDirectionStack.pop();
+    } while (conflict(prevDirection, snakeDirection));
 
-        do {
-            snakeDirection = snakeDirectionStack.pop();
-        } while (conflict(prevDirection, snakeDirection));
-
-        if (snakeDirection === undefined) snakeDirection = prevDirection;
-
-        switch (snakeDirection) {
+    if (snakeDirection === undefined) snakeDirection = prevDirection;
+    
+    switch (snakeDirection) {
             case "UP":
-                next = { x: first.x, y: first.y - 1 };
-                break;
+            next = { x: first.x, y: first.y - 1 };
+            break;
             case "DOWN":
-                next = { x: first.x, y: first.y + 1 };
-                break;
-            case "LEFT":
-                next = { x: first.x - 1, y: first.y };
-                break;
-            case "RIGHT":
-                next = { x: first.x + 1, y: first.y };
-                break;
-        }
-
-        // handle game border collision
-        if (next.x > gameWidthInCells - 1 || next.y > gameHeightInCells - 1 || next.y < 0 || next.x < 0) {
-            alert("GAME OVER, YOU CRASHED!");
-            cancelAnimationFrame(frameRequest);
+            next = { x: first.x, y: first.y + 1 };
+            break;
+        case "LEFT":
+            next = { x: first.x - 1, y: first.y };
+            break;
+        case "RIGHT":
+            next = { x: first.x + 1, y: first.y };
+            break;
+        
+    
+        andle game border collision
+        next.x > gameWidthInCells - 1 || next.y > gameHeightInCells - 1 || next.y < 0 || next.x < 0) {
+        alert("GAME OVER, YOU CRASHED!");
+        cancelAnimationFrame(frameRequest);
             return;
-        }
-
-        // handle snake collision
+    }
+    
+    // handle snake collision
         if (snakeCoordinates.some(e => e.x === next.x && e.y === next.y)) {
-            alert("GAME OVER, YOU RAN INTO YOUR OWN SNAKE!");
-            cancelAnimationFrame(frameRequest);
+        alert("GAME OVER, YOU RAN INTO YOUR OWN SNAKE!");
+        cancelAnimationFrame(frameRequest);
             return;
         }
 
