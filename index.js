@@ -2,8 +2,6 @@
 
 // TODO: declutter global scope
 
-// TODO: font Press Start 2P
-
 // FEATURES:
 // TODO: initiate a CSS transition when blocks go over signs
 // TODO: animate 'eating' food: food moves through the snake, when it reaches the end it animates from yellow to red
@@ -15,12 +13,10 @@
 
 const FRAME_INTERVAL = 100; // miliseconds
 const GAME_DIMS = { HEIGHT_IN_CELLS: 27, WIDTH_IN_CELLS: 48, MARGIN_IN_CELLS: 5, ASPECT_RATIO: (16 / 9) };
-// const CELL_SIZE = 25; NO LONGER NEEDED, cell size now dependent on screen
 const NUM_FOOD_PIECES = 1;
-const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial board?
+const SNAKE_INIT_SIZE = 5;
 const SNAKE_INIT_DIR = "RIGHT";
-const GAME_CONT_COLOR = "#75aaff"; // TODO: delete eventually
-const SNAKE_CONT_COLOR = "black"; // TODO: delete eventually
+const GAME_CONT_COLOR = "#75aaff";
 const CELL_COLOR_SCHEME = { empty: "#d4e2fc", food: "yellow", snake: "red", digest: "green" };
 let frameRequest = null;
 
@@ -130,25 +126,33 @@ window.onload = () => {
     scoreDisplay.style.color = "black";
     scoreDisplay.id = "score-display";
 
-    // define pause display
-    let pauseDisplay = document.createElement("div");
-    pauseDisplay.style.position = "absolute";
-    pauseDisplay.style.right = `${-(cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
-    pauseDisplay.style.fontSize = `${cellSize}px`;
-    pauseDisplay.style.padding = `${cellSize / 2}px`;
-    pauseDisplay.style.whiteSpace = "nowrap";
-    pauseDisplay.innerHTML = "<span id=\"pause-btn\">Pause</span>";
-    pauseDisplay.style.color = "grey";
-    pauseDisplay.id = "pause-display";
+    // define pause button
+    let pauseButton = document.createElement("div");
+    pauseButton.style.position = "absolute";
+    pauseButton.style.right = `${-(cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
+    pauseButton.style.fontSize = `${cellSize}px`;
+    pauseButton.style.padding = `${cellSize / 2}px`;
+    pauseButton.style.whiteSpace = "nowrap";
+    pauseButton.innerHTML = "<span id=\"pause-btn\">Pause</span>";
+    pauseButton.style.zIndex = "2";
+    pauseButton.id = "pause-button-wrapper";
 
     // define snake container 
     let snakeContainer = document.createElement("div");
-    snakeContainer.style.background = SNAKE_CONT_COLOR;
     snakeContainer.style.top = `${topMargin}px`;
     snakeContainer.style.left = `${sideMargin}px`;
     snakeContainer.style.position = "relative";
     snakeContainer.style.display = "inline-block";
     snakeContainer.id = "snake-container";
+
+    let pauseDisplay = document.createElement("div");
+    pauseDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
+    pauseDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    pauseDisplay.style.position = "absolute";
+    pauseDisplay.style.zIndex = "-1";
+    pauseDisplay.style.opacity = ".5";
+    pauseDisplay.style.background = "black";
+    pauseDisplay.id = "pause-display";
 
     // define cell matrix
     let cells = [];
@@ -165,7 +169,8 @@ window.onload = () => {
     // append score display to snake container
     snakeContainer.appendChild(scoreDisplay);
 
-    // append pause display to snake container
+    // append pause button to snake container
+    snakeContainer.appendChild(pauseButton);
     snakeContainer.appendChild(pauseDisplay);
 
     // append snake container to game container
@@ -178,8 +183,7 @@ window.onload = () => {
     startGame(cells);
 }
 
-// TODO: implement a more robust resizing mechanism
-
+// TODO: when to resize?
 // If screen is resized, reload the page
 //window.onresize = function () { location.reload(); }
 
@@ -193,6 +197,9 @@ function startGame(newCells) {
     let snakeDirection = SNAKE_INIT_DIR;
     let snakeDirectionStack = [];
     let gameScore = 0;
+    let gameIsPaused = false;
+
+    document.getElementById('pause-btn').addEventListener('click', togglePauseScreen);
 
     // TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
     // and how to make it difficult to have conflicting 'truths'
@@ -263,24 +270,42 @@ function startGame(newCells) {
                 case "d":
                     snakeDirectionStack.unshift("RIGHT");
                     break;
-                case " ":
-                    alert("GAME OVER, REFRESH");
-                    stop();
+                case "p":
+                    togglePauseScreen();
                     break;
             }
         }
     });
 
+    function togglePauseScreen() {
+        let pauseDisplay = document.getElementById("pause-display");
+        let pauseButton = null;
+        gameIsPaused = !gameIsPaused;
+        if (!gameIsPaused) { // restart game
+            pauseButton = document.getElementById('pause-btn-special');
+            pauseButton.id = "pause-btn";
+            pauseDisplay.style.zIndex = "-1";
+            nextFrame();
+        } else { // pause game
+            window.cancelAnimationFrame(frameRequest);
+            pauseDisplay.style.zIndex = "1";
+            pauseButton = document.getElementById('pause-btn');
+            pauseButton.id = "pause-btn-special";
+        }
+    }
+
     // update next frame
     function nextFrame() {
+        if (gameIsPaused) return;
+
         const first = snakeCoordinates[0];
         const last = snakeCoordinates[snakeCoordinates.length - 1];
         let next = first;
         let prevDirection = snakeDirection;
-    
+
         do {
-                snakeDirection = snakeDirectionStack.pop();
-            } while (conflict(prevDirection, snakeDirection));
+            snakeDirection = snakeDirectionStack.pop();
+        } while (conflict(prevDirection, snakeDirection));
 
         if (snakeDirection === undefined) snakeDirection = prevDirection;
 
@@ -302,7 +327,7 @@ function startGame(newCells) {
         // handle game border collision
         if (next.x > gameWidthInCells - 1 || next.y > gameHeightInCells - 1 || next.y < 0 || next.x < 0) {
             alert("GAME OVER, YOU CRASHED!");
-            cancelAnimationFrame(frameRequest);
+            //cancelAnimationFrame(frameRequest)
             return;
         }
 
@@ -336,7 +361,7 @@ function startGame(newCells) {
         }
 
         // request new frame every FRAME_INTERVAL
-        setTimeout(() => { frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL)
+        setTimeout(() => { frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL);
     }
 
     // request first frame
