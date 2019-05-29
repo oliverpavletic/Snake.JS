@@ -5,6 +5,7 @@
 // TODO: font Press Start 2P
 
 // FEATURES:
+// TODO: initiate a CSS transition when blocks go over signs
 // TODO: animate 'eating' food: food moves through the snake, when it reaches the end it animates from yellow to red
 // TODO: game over screen
 // TODO: pause screen
@@ -18,9 +19,9 @@ const GAME_DIMS = { HEIGHT_IN_CELLS: 27, WIDTH_IN_CELLS: 48, MARGIN_IN_CELLS: 5,
 const NUM_FOOD_PIECES = 1;
 const SNAKE_INIT_SIZE = 5; // TODO: what if this is larger than the initial board?
 const SNAKE_INIT_DIR = "RIGHT";
-const GAME_CONT_COLOR = "grey"; // TODO: delete eventually
+const GAME_CONT_COLOR = "#75aaff"; // TODO: delete eventually
 const SNAKE_CONT_COLOR = "black"; // TODO: delete eventually
-const CELL_COLOR_SCHEME = { empty: "white", food: "yellow", snake: "red", digest: "green" };
+const CELL_COLOR_SCHEME = { empty: "#d4e2fc", food: "yellow", snake: "red", digest: "green" };
 let frameRequest = null;
 
 class Cell {
@@ -111,10 +112,6 @@ window.onload = () => {
         console.log("2");
     }
 
-    console.log(`Screen Height: ${screenHeight}`);
-    console.log(`Total Height (cells) ${totalHeightInCells}`);
-    console.log(`Cell size: ${cellSize}`);
-    console.log(`Top Margin: ${topMargin}`);
 
     // define game container 
     let gameContainer = document.createElement("div");
@@ -127,13 +124,22 @@ window.onload = () => {
     // define score display
     let scoreDisplay = document.createElement("div");
     scoreDisplay.style.position = "absolute";
-    scoreDisplay.style.bottom = `${screenHeight}px`;
-    scoreDisplay.style.right = `${screenWidth - (sideMargin + (cellSize * GAME_DIMS.WIDTH_IN_CELLS))}px`;
     scoreDisplay.style.fontSize = `${cellSize}px`;
-    scoreDisplay.innerHTML = "SCORE: <span id=\"score\">0</span>";
-    scoreDisplay.style.color = "white";
-    scoreDisplay.background = "red";
+    scoreDisplay.style.padding = `${cellSize / 2}px`;
+    scoreDisplay.innerHTML = "SCORE:<span id=\"score\">0</span>";
+    scoreDisplay.style.color = "black";
     scoreDisplay.id = "score-display";
+
+    // define pause display
+    let pauseDisplay = document.createElement("div");
+    pauseDisplay.style.position = "absolute";
+    pauseDisplay.style.right = `${-(cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
+    pauseDisplay.style.fontSize = `${cellSize}px`;
+    pauseDisplay.style.padding = `${cellSize / 2}px`;
+    pauseDisplay.style.whiteSpace = "nowrap";
+    pauseDisplay.innerHTML = "<span id=\"pause-btn\">Pause</span>";
+    pauseDisplay.style.color = "grey";
+    pauseDisplay.id = "pause-display";
 
     // define snake container 
     let snakeContainer = document.createElement("div");
@@ -156,8 +162,11 @@ window.onload = () => {
         }
     }
 
-    // append score display to game container
-    gameContainer.appendChild(scoreDisplay);
+    // append score display to snake container
+    snakeContainer.appendChild(scoreDisplay);
+
+    // append pause display to snake container
+    snakeContainer.appendChild(pauseDisplay);
 
     // append snake container to game container
     gameContainer.appendChild(snakeContainer);
