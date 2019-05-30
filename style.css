@@ -1,0 +1,36 @@
+body {
+    font-family: 'Press Start 2P', cursive;
+    margin: 0;
+}
+
+#pause-btn {
+    transition: 0.2s;
+    color: grey;
+}
+
+#pause-btn:hover {
+    color: black;
+
+}
+
+#pause-btn-special {
+    color: black;
+    transition: 0.5s;
+}
+
+#pause-btn-special:hover {
+    color: whitesmoke;
+}
+
+#game-over-disp {
+    transition: opacity 1s ease-in-out;
+}
+
+#play-again-text {
+    color: rgb(100, 100, 100);
+    transition: 0.2s;
+}
+
+#play-again-text:hover {
+    color: #75aaff;
+}

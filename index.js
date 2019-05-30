@@ -57,11 +57,8 @@ class Cell {
 // set up the game board and cells
 window.onload = () => {
     // TODO!!: clean up this section 
-    // TODO: investiage percentages to make this easier!!!
-
-
-    // modify body style
-    document.body.style.margin = "0px";
+    // TODO: put all 'well-defined' styles in a stylesheet file
+    // , only put what you need in js here.. try not to clutter the js... 
 
     // get screen dimensions (px)
     let bounds = getBounds();
@@ -154,6 +151,40 @@ window.onload = () => {
     pauseDisplay.style.background = "black";
     pauseDisplay.id = "pause-display";
 
+    let gameOverDisplay = document.createElement("div");
+    gameOverDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
+    gameOverDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    gameOverDisplay.style.position = "absolute";
+    gameOverDisplay.style.zIndex = "2";
+    gameOverDisplay.style.opacity = "0";
+    gameOverDisplay.style.background = "red";
+    gameOverDisplay.id = "game-over-disp";
+
+    let gameOverText = document.createElement("div");
+    gameOverText.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    gameOverText.style.textAlign = "center";
+    gameOverText.style.position = "absolute";
+    gameOverText.style.whiteSpace = "nowrap";
+    gameOverText.style.fontSize = `${2 * cellSize}px`;
+    gameOverText.style.top = `${cellSize * ((GAME_DIMS.HEIGHT_IN_CELLS * .5) - 4)}px`;
+    gameOverText.style.padding = `${cellSize / 2}px`;
+    gameOverText.style.zIndex = "-1";
+    gameOverText.innerText = "Game Over";
+    gameOverText.id = "game-over-text";
+
+    let playAgainText = document.createElement("div");
+    playAgainText.style.textAlign = "center";
+    playAgainText.style.whiteSpace = "nowrap";
+    playAgainText.style.fontSize = `${cellSize}px`;
+    playAgainText.style.zIndex = "-1";
+    playAgainText.style.padding = `${cellSize / 2}px`;
+    playAgainText.innerText = "Play Again";
+    playAgainText.id = "play-again-text";
+
+    gameOverText.appendChild(playAgainText);
+    snakeContainer.appendChild(gameOverText);
+
+
     // define cell matrix
     let cells = [];
     for (var i = 0; i < GAME_DIMS.WIDTH_IN_CELLS; i++) {
@@ -165,6 +196,9 @@ window.onload = () => {
             snakeContainer.appendChild(cells[i][j].html);
         }
     }
+
+    // append game over display
+    snakeContainer.append(gameOverDisplay);
 
     // append score display to snake container
     snakeContainer.appendChild(scoreDisplay);
@@ -189,6 +223,7 @@ window.onload = () => {
 
 // game manager
 function startGame(newCells) {
+
     let cells = newCells;
     let gameWidthInCells = cells.length;
     let gameHeightInCells = cells[0].length;
@@ -326,8 +361,12 @@ function startGame(newCells) {
 
         // handle game border collision
         if (next.x > gameWidthInCells - 1 || next.y > gameHeightInCells - 1 || next.y < 0 || next.x < 0) {
-            alert("GAME OVER, YOU CRASHED!");
-            //cancelAnimationFrame(frameRequest)
+            window.cancelAnimationFrame(frameRequest);
+            gameIsPaused = true;
+            document.getElementById('game-over-disp').style.opacity = ".5";
+            setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
+            setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
+
             return;
         }
 
