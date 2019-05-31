@@ -2,11 +2,10 @@
 
 // TODO: declutter global scope
 
+// TODO: if no internet, set default text
+
 // FEATURES:
 // TODO: initiate a CSS transition when blocks go over signs
-// TODO: animate 'eating' food: food moves through the snake, when it reaches the end it animates from yellow to red
-// TODO: game over screen
-// TODO: pause screen
 // TODO: main menu screen
 // TODO: options
 // TODO: maps/difficulties/etc.
@@ -214,7 +213,7 @@ window.onload = () => {
     document.body.appendChild(gameContainer);
 
     // game board is now set up, start game and pass newly created cells
-    startGame(cells);
+    gameManager(cells);
 }
 
 // TODO: when to resize?
@@ -222,9 +221,8 @@ window.onload = () => {
 //window.onresize = function () { location.reload(); }
 
 // game manager
-function startGame(newCells) {
-
-    let cells = newCells;
+function gameManager(passedCells) {
+    let cells = passedCells;
     let gameWidthInCells = cells.length;
     let gameHeightInCells = cells[0].length;
     let snakeCoordinates = spawnSnake();
@@ -233,8 +231,6 @@ function startGame(newCells) {
     let snakeDirectionStack = [];
     let gameScore = 0;
     let gameIsPaused = false;
-
-    document.getElementById('pause-btn').addEventListener('click', togglePauseScreen);
 
     // TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
     // and how to make it difficult to have conflicting 'truths'
@@ -260,8 +256,6 @@ function startGame(newCells) {
         return coordinates;
     }
 
-    // TODO: test issue with food respawn... not always respawning all food
-
     // spawn intial food
     function spawnFood(oldFoodCoordinates) {
         let newFoodCoordinates = oldFoodCoordinates;
@@ -282,6 +276,9 @@ function startGame(newCells) {
 
         return newFoodCoordinates;
     }
+
+    // add event listener for pause button 
+    document.getElementById('pause-btn').addEventListener('click', togglePauseScreen);
 
     // add event listener to enable snake direction change
     window.addEventListener("keydown", e => {
@@ -329,6 +326,10 @@ function startGame(newCells) {
         }
     }
 
+    function newGame() {
+        console.log('new game');
+    }
+
     // update next frame
     function nextFrame() {
         if (gameIsPaused) return;
@@ -359,14 +360,14 @@ function startGame(newCells) {
                 break;
         }
 
-        // handle game border collision
+        // handle game border collision (game over)
         if (next.x > gameWidthInCells - 1 || next.y > gameHeightInCells - 1 || next.y < 0 || next.x < 0) {
             window.cancelAnimationFrame(frameRequest);
             gameIsPaused = true;
             document.getElementById('game-over-disp').style.opacity = ".5";
             setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
             setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
-
+            document.getElementById('play-again-text').addEventListener('click', newGame);
             return;
         }
 
