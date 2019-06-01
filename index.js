@@ -18,6 +18,7 @@ const SNAKE_INIT_DIR = "RIGHT";
 const GAME_CONT_COLOR = "#75aaff";
 const CELL_COLOR_SCHEME = { empty: "#d4e2fc", food: "yellow", snake: "red", digest: "green" };
 let frameRequest = null;
+let cellSize = null;
 
 class Cell {
     constructor(x, y, size, status) {
@@ -55,6 +56,16 @@ class Cell {
 
 // set up the game board and cells
 window.onload = () => {
+    // make game Manager call wait for setup screen to return...?
+    setupScreen();
+    gameManager();
+}
+
+// TODO: when to resize?
+// If screen is resized, reload the page
+//window.onresize = function () { location.reload(); }
+
+function setupScreen() {
     // TODO!!: clean up this section 
     // TODO: put all 'well-defined' styles in a stylesheet file
     // , only put what you need in js here.. try not to clutter the js... 
@@ -71,7 +82,6 @@ window.onload = () => {
 
     let totalWidthInCells = null;
     let totalHeightInCells = null;
-    let cellSize = null;
     let heightCorrection = 0;
     let widthCorrection = 0;
     let topMargin = 0;
@@ -89,7 +99,6 @@ window.onload = () => {
         topMargin = GAME_DIMS.MARGIN_IN_CELLS * cellSize;
         // side
         sideMargin = widthCorrection / 2;
-        console.log("1");
     } else {
         // total width (cells)
         totalWidthInCells = GAME_DIMS.WIDTH_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
@@ -101,9 +110,7 @@ window.onload = () => {
         topMargin = heightCorrection / 2;
         // side
         sideMargin = GAME_DIMS.MARGIN_IN_CELLS * cellSize;
-        console.log("2");
     }
-
 
     // define game container 
     let gameContainer = document.createElement("div");
@@ -121,6 +128,7 @@ window.onload = () => {
     scoreDisplay.innerHTML = "SCORE:<span id=\"score\">0</span>";
     scoreDisplay.style.color = "black";
     scoreDisplay.id = "score-display";
+    scoreDisplay.style.zIndex = "1";
 
     // define pause button
     let pauseButton = document.createElement("div");
@@ -183,19 +191,6 @@ window.onload = () => {
     gameOverText.appendChild(playAgainText);
     snakeContainer.appendChild(gameOverText);
 
-
-    // define cell matrix
-    let cells = [];
-    for (var i = 0; i < GAME_DIMS.WIDTH_IN_CELLS; i++) {
-        cells[i] = [];
-        for (var j = 0; j < GAME_DIMS.HEIGHT_IN_CELLS; j++) {
-            // assign cell to corresponding index in the cells matrix
-            cells[i][j] = new Cell(i, j, cellSize, "empty");
-            // append newly created cell to game container
-            snakeContainer.appendChild(cells[i][j].html);
-        }
-    }
-
     // append game over display
     snakeContainer.append(gameOverDisplay);
 
@@ -211,18 +206,11 @@ window.onload = () => {
 
     // append game container to document body
     document.body.appendChild(gameContainer);
-
-    // game board is now set up, start game and pass newly created cells
-    gameManager(cells);
 }
 
-// TODO: when to resize?
-// If screen is resized, reload the page
-//window.onresize = function () { location.reload(); }
-
 // game manager
-function gameManager(passedCells) {
-    let cells = passedCells;
+function gameManager() {
+    let cells = createCells(GAME_DIMS.HEIGHT_IN_CELLS, GAME_DIMS.WIDTH_IN_CELLS, document.querySelector('#snake-container'));
     let gameWidthInCells = cells.length;
     let gameHeightInCells = cells[0].length;
     let snakeCoordinates = spawnSnake();
@@ -232,11 +220,29 @@ function gameManager(passedCells) {
     let gameScore = 0;
     let gameIsPaused = false;
 
+
     // TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
     // and how to make it difficult to have conflicting 'truths'
     // have one function where changing the status of a given cell also adds it to coordinates and such
 
     // TODO: refactor spawnSnake() to make it more stateless and so it can be used in the frame updating? well that would be more inefficent so idk..
+
+    // create cells
+    function createCells(height, width, container) {
+        // define cell matrix
+        let cells = [];
+        for (var i = 0; i < width; i++) {
+            cells[i] = [];
+            for (var j = 0; j < height; j++) {
+                // assign cell to corresponding index in the cells matrix
+                cells[i][j] = new Cell(i, j, cellSize, "empty");
+                // append newly created cell to game container
+                // TODO: append to local element and then add to DOM? efficiency question...
+                container.appendChild(cells[i][j].html);
+            }
+        }
+        return cells;
+    }
 
     // spawn snake 
     function spawnSnake() {
@@ -328,76 +334,144 @@ function gameManager(passedCells) {
 
     function newGame() {
         console.log('new game');
+        emptyAllCells();
+        removeGameOverDisplay();
+        snakeDirection = SNAKE_INIT_DIR;
+        foodCoordinates = spawnFood([]);
+        resetScore();
+        snakeCoordinates = spawnSnake();
+        gameIsPaused = false;
+        nextFrame();
     }
 
-    // update next frame
-    function nextFrame() {
-        if (gameIsPaused) return;
+    function gameOver() {
+        window.cancelAnimationFrame(frameRequest);
+        gameIsPaused = true;
+        document.getElementById('game-over-disp').style.opacity = ".5";
+        setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
+        setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
+        document.getElementById('play-again-text').addEventListener('click', newGame);
+    }
 
-        const first = snakeCoordinates[0];
-        const last = snakeCoordinates[snakeCoordinates.length - 1];
-        let next = first;
+    function removeGameOverDisplay() {
+        document.getElementById('play-again-text').removeEventListener('click', newGame);
+        document.getElementById('game-over-disp').style.opacity = "0";
+        document.getElementById('game-over-text').style.zIndex = -1;
+        document.getElementById('play-again-text').style.zIndex = -1;
+    }
+
+    function emptyAllCells() {
+        let cellsToClear = foodCoordinates.concat(snakeCoordinates);
+        foodCoordinates = [];
+        snakeCoordinates = [];
+        for (var i = 0, j = cellsToClear.length; i < j; i++) {
+            cells[cellsToClear[i].x][cellsToClear[i].y].setStatus("empty");
+        }
+    }
+
+    function incrementScore() {
+        document.getElementById('score').innerHTML = ++gameScore;
+    }
+
+    function resetScore() {
+        document.getElementById('score').innerHTML = 0;
+        gameScore = 0;
+    }
+
+    function getNextCoordinates(initial, direction) {
+        let nextCoordinates = null;
+        switch (direction) {
+            case "UP":
+                nextCoordinates = { x: initial.x, y: initial.y - 1 };
+                break;
+            case "DOWN":
+                nextCoordinates = { x: initial.x, y: initial.y + 1 };
+                break;
+            case "LEFT":
+                nextCoordinates = { x: initial.x - 1, y: initial.y };
+                break;
+            case "RIGHT":
+                nextCoordinates = { x: initial.x + 1, y: initial.y };
+                break;
+            // arbitrary default to avoid fatal error
+            default:
+                // RIGHT
+                nextCoordinates = { x: initial.x + 1, y: initial.y };
+                console.log("Illegal direction passed to getNextCoordinates");
+                break;
+        }
+        return nextCoordinates;
+    }
+
+    function addNextToSnake(nextCoordinates) {
+        cells[nextCoordinates.x][nextCoordinates.y].setStatus("snake");
+        snakeCoordinates.unshift(nextCoordinates);
+    }
+
+    function removeLastFromSnake(lastCoordinates) {
+        cells[lastCoordinates.x][lastCoordinates.y].setStatus("empty");
+        snakeCoordinates.pop();
+    }
+
+    function eatFood(foodIndex) {
+        // remove food
+        foodCoordinates.splice(foodIndex, 1);
+        // respawn food
+        foodCoordinates = spawnFood(foodCoordinates);
+        // update score 
+        incrementScore();
+        // TODO: digest animation ?
+    }
+
+    function getFoodCollisionIndex(nextCoordinates) {
+        return foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
+    }
+
+    function fatalCollision(nextCoordinates) {
+        if (nextCoordinates.x > gameWidthInCells - 1 || nextCoordinates.y > gameHeightInCells - 1
+            || nextCoordinates.y < 0 || nextCoordinates.x < 0
+            || snakeCoordinates.some(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y)) {
+            return true;
+        }
+        return false;
+    }
+
+    // i dont like this weird return stuff plus class vars..
+    function evalSnakeDirection() {
         let prevDirection = snakeDirection;
-
         do {
             snakeDirection = snakeDirectionStack.pop();
         } while (conflict(prevDirection, snakeDirection));
 
         if (snakeDirection === undefined) snakeDirection = prevDirection;
+    }
 
-        switch (snakeDirection) {
-            case "UP":
-                next = { x: first.x, y: first.y - 1 };
-                break;
-            case "DOWN":
-                next = { x: first.x, y: first.y + 1 };
-                break;
-            case "LEFT":
-                next = { x: first.x - 1, y: first.y };
-                break;
-            case "RIGHT":
-                next = { x: first.x + 1, y: first.y };
-                break;
-        }
+    function nextFrame() {
+        if (gameIsPaused) return;
 
-        // handle game border collision (game over)
-        if (next.x > gameWidthInCells - 1 || next.y > gameHeightInCells - 1 || next.y < 0 || next.x < 0) {
-            window.cancelAnimationFrame(frameRequest);
-            gameIsPaused = true;
-            document.getElementById('game-over-disp').style.opacity = ".5";
-            setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
-            setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
-            document.getElementById('play-again-text').addEventListener('click', newGame);
-            return;
-        }
+        const firstCoordinates = snakeCoordinates[0];
+        const lastCoordinates = snakeCoordinates[snakeCoordinates.length - 1];
+        let nextCoordinates = firstCoordinates;
 
-        // handle snake collision
-        if (snakeCoordinates.some(e => e.x === next.x && e.y === next.y)) {
-            alert("GAME OVER, YOU RAN INTO YOUR OWN SNAKE!");
-            cancelAnimationFrame(frameRequest);
-            return;
-        }
+        evalSnakeDirection();
+
+        nextCoordinates = getNextCoordinates(firstCoordinates, snakeDirection);
+
+        // TODO: proper style for return and call function even if return value is not important and unused.
+        if (fatalCollision(nextCoordinates)) return gameOver();
 
         // no fatal collisions, so add next cell to snake 
-        cells[next.x][next.y].setStatus("snake");
-        snakeCoordinates.unshift(next);
+        addNextToSnake(nextCoordinates);
 
-        // handle food collision       
-        let foodIndex = foodCoordinates.findIndex(e => e.x === next.x && e.y === next.y);
+        // handle food collision   
+        let foodIndex = getFoodCollisionIndex(nextCoordinates);
 
         if (foodIndex !== -1) {
-            // remove food
-            foodCoordinates.splice(foodIndex, 1);
-            // respawn food
-            foodCoordinates = spawnFood(foodCoordinates);
-            // update score 
-            document.getElementById('score').innerHTML = ++gameScore;
-            // TODO: digest animation
-            // make current cell turn SPECIAL COLOR until to its left is red, and right is white!
+            // food collision
+            eatFood(foodIndex);
         } else {
-            // no food collision: remove last cell from snake
-            cells[last.x][last.y].setStatus("empty");
-            snakeCoordinates.pop();
+            // no food collision
+            removeLastFromSnake(lastCoordinates);
         }
 
         // request new frame every FRAME_INTERVAL
