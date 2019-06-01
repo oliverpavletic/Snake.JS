@@ -17,8 +17,6 @@ const SNAKE_INIT_SIZE = 5;
 const SNAKE_INIT_DIR = "RIGHT";
 const GAME_CONT_COLOR = "#75aaff";
 const CELL_COLOR_SCHEME = { empty: "#d4e2fc", food: "yellow", snake: "red", digest: "green" };
-let frameRequest = null;
-let cellSize = null;
 
 class Cell {
     constructor(x, y, size, status) {
@@ -57,8 +55,9 @@ class Cell {
 // set up the game board and cells
 window.onload = () => {
     // make game Manager call wait for setup screen to return...?
-    setupScreen();
-    gameManager();
+    let cellSize = setupScreen();
+    let game = new SnakeGame(cellSize);
+    game.start();
 }
 
 // TODO: when to resize?
@@ -206,56 +205,96 @@ function setupScreen() {
 
     // append game container to document body
     document.body.appendChild(gameContainer);
+
+    return cellSize;
 }
 
+// TODO: refactor with ES6 Class Syntax
 // game manager
-function gameManager() {
-    let cells = createCells(GAME_DIMS.HEIGHT_IN_CELLS, GAME_DIMS.WIDTH_IN_CELLS, document.querySelector('#snake-container'));
-    let gameWidthInCells = cells.length;
-    let gameHeightInCells = cells[0].length;
-    let snakeCoordinates = spawnSnake();
-    let foodCoordinates = spawnFood([]);
-    let snakeDirection = SNAKE_INIT_DIR;
-    let snakeDirectionStack = [];
-    let gameScore = 0;
-    let gameIsPaused = false;
+class SnakeGame {
+    constructor(cellSize) {
+        this.cellSize = cellSize;
+        this.container = document.querySelector('#snake-container');
+        this.cells = this.createCells();
+        this.snakeCoordinates = this.spawnSnake();
+        this.foodCoordinates = this.spawnFood([]);
+        this.snakeDirection = SNAKE_INIT_DIR;
+        this.snakeDirectionStack = [];
+        this.gameScore = 0;
+        this.gameIsPaused = false;
+        this.frameRequest = null;
 
+    }
+
+    start() {
+        // add event listener for pause button 
+        document.getElementById('pause-btn').addEventListener('click', togglePauseScreen);
+
+        // add event listener to enable snake direction change
+        window.addEventListener("keydown", e => {
+            // button is not held down such that it is automatically repeating
+            if (!e.repeat) {
+                // arrow keys and WASD
+                switch (e.key) {
+                    case "ArrowUp":
+                    case "w":
+                        this.snakeDirectionStack.unshift("UP");
+                        break;
+                    case "ArrowDown":
+                    case "s":
+                        this.snakeDirectionStack.unshift("DOWN");
+                        break;
+                    case "ArrowLeft":
+                    case "a":
+                        this.snakeDirectionStack.unshift("LEFT");
+                        break;
+                    case "ArrowRight":
+                    case "d":
+                        this.snakeDirectionStack.unshift("RIGHT");
+                        break;
+                    case "p":
+                        togglePauseScreen();
+                        break;
+                }
+            }
+        });
+
+        nextFrame();
+    }
 
     // TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
     // and how to make it difficult to have conflicting 'truths'
     // have one function where changing the status of a given cell also adds it to coordinates and such
 
-    // TODO: refactor spawnSnake() to make it more stateless and so it can be used in the frame updating? well that would be more inefficent so idk..
-
     // create cells
-    function createCells(height, width, container) {
+    createCells() {
         // define cell matrix
         let cells = [];
-        for (var i = 0; i < width; i++) {
+        for (var i = 0; i < GAME_DIMS.WIDTH_IN_CELLS; i++) {
             cells[i] = [];
-            for (var j = 0; j < height; j++) {
+            for (var j = 0; j < GAME_DIMS.WIDTH_IN_CELLS; j++) {
                 // assign cell to corresponding index in the cells matrix
-                cells[i][j] = new Cell(i, j, cellSize, "empty");
+                this.cells[i][j] = new Cell(i, j, this.cellSize, "empty");
                 // append newly created cell to game container
                 // TODO: append to local element and then add to DOM? efficiency question...
-                container.appendChild(cells[i][j].html);
+                this.container.appendChild(cells[i][j].html);
             }
         }
         return cells;
     }
 
     // spawn snake 
-    function spawnSnake() {
+    spawnSnake() {
         let coordinates = [];
 
         // add center cell to snake
-        let center = { x: Math.floor(gameWidthInCells / 2), y: Math.floor(gameHeightInCells / 2) };
-        cells[center.x][center.y].setStatus("snake"); // FLAG: refactor
+        let center = { x: Math.floor(GAME_DIMS.WIDTH_IN_CELLS / 2), y: Math.floor(GAME_DIMS.HEIGHT_IN_CELLS / 2) };
+        this.cells[center.x][center.y].setStatus("snake"); // FLAG: refactor
         coordinates.push(center);
 
         // add remaining cells to snake
         for (var i = 0; i < SNAKE_INIT_SIZE - 1; i++) {
-            cells[center.x - (i + 1)][center.y].setStatus("snake"); // FLAG: refactor
+            this.cells[center.x - (i + 1)][center.y].setStatus("snake"); // FLAG: refactor
             coordinates.push({ x: center.x - (i + 1), y: center.y });
         }
 
@@ -263,7 +302,7 @@ function gameManager() {
     }
 
     // spawn intial food
-    function spawnFood(oldFoodCoordinates) {
+    spawnFood(oldFoodCoordinates) {
         let newFoodCoordinates = oldFoodCoordinates;
         let numExistingFoodPieces = newFoodCoordinates.length;
         let randomCell = null;
@@ -273,112 +312,80 @@ function gameManager() {
 
             // do-while to avoid duplicate food pieces and collisions with snake coordinates
             do {
-                randomCell = { x: Math.floor(Math.random() * gameWidthInCells), y: Math.floor(Math.random() * gameHeightInCells) };
-            } while ((newFoodCoordinates.concat(snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
+                randomCell = { x: Math.floor(Math.random() * GAME_DIMS.WIDTH_IN_CELLS), y: Math.floor(Math.random() * GAME_DIMS.HEIGHT_IN_CELLS) };
+            } while ((newFoodCoordinates.concat(this.snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
 
-            cells[randomCell.x][randomCell.y].setStatus("food"); // FLAG: refactor
+            this.cells[randomCell.x][randomCell.y].setStatus("food"); // FLAG: refactor
             newFoodCoordinates.push(randomCell);
         }
 
         return newFoodCoordinates;
     }
 
-    // add event listener for pause button 
-    document.getElementById('pause-btn').addEventListener('click', togglePauseScreen);
 
-    // add event listener to enable snake direction change
-    window.addEventListener("keydown", e => {
-        // button is not held down such that it is automatically repeating
-        if (!e.repeat) {
-            // arrow keys and WASD
-            switch (e.key) {
-                case "ArrowUp":
-                case "w":
-                    snakeDirectionStack.unshift("UP");
-                    break;
-                case "ArrowDown":
-                case "s":
-                    snakeDirectionStack.unshift("DOWN");
-                    break;
-                case "ArrowLeft":
-                case "a":
-                    snakeDirectionStack.unshift("LEFT");
-                    break;
-                case "ArrowRight":
-                case "d":
-                    snakeDirectionStack.unshift("RIGHT");
-                    break;
-                case "p":
-                    togglePauseScreen();
-                    break;
-            }
-        }
-    });
-
-    function togglePauseScreen() {
+    togglePauseScreen() {
         let pauseDisplay = document.getElementById("pause-display");
         let pauseButton = null;
-        gameIsPaused = !gameIsPaused;
-        if (!gameIsPaused) { // restart game
+        this.gameIsPaused = !this.gameIsPaused;
+        if (!this.gameIsPaused) { // restart game
             pauseButton = document.getElementById('pause-btn-special');
             pauseButton.id = "pause-btn";
             pauseDisplay.style.zIndex = "-1";
             nextFrame();
         } else { // pause game
-            window.cancelAnimationFrame(frameRequest);
+            window.cancelAnimationFrame(this.frameRequest);
             pauseDisplay.style.zIndex = "1";
             pauseButton = document.getElementById('pause-btn');
             pauseButton.id = "pause-btn-special";
         }
     }
 
-    function newGame() {
-        console.log('new game');
+    newGame() {
         emptyAllCells();
         removeGameOverDisplay();
-        snakeDirection = SNAKE_INIT_DIR;
-        foodCoordinates = spawnFood([]);
+        this.snakeDirection = SNAKE_INIT_DIR;
+        this.foodCoordinates = spawnFood([]);
         resetScore();
-        snakeCoordinates = spawnSnake();
-        gameIsPaused = false;
+        this.snakeCoordinates = spawnSnake();
+        this.gameIsPaused = false;
         nextFrame();
     }
 
-    function gameOver() {
-        window.cancelAnimationFrame(frameRequest);
-        gameIsPaused = true;
+    gameOver() {
+        window.cancelAnimationFrame(this.frameRequest);
+        this.gameIsPaused = true;
         document.getElementById('game-over-disp').style.opacity = ".5";
         setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
         setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
         document.getElementById('play-again-text').addEventListener('click', newGame);
     }
 
-    function removeGameOverDisplay() {
+    removeGameOverDisplay() {
         document.getElementById('play-again-text').removeEventListener('click', newGame);
         document.getElementById('game-over-disp').style.opacity = "0";
         document.getElementById('game-over-text').style.zIndex = -1;
         document.getElementById('play-again-text').style.zIndex = -1;
     }
 
-    function emptyAllCells() {
-        let cellsToClear = foodCoordinates.concat(snakeCoordinates);
-        foodCoordinates = [];
-        snakeCoordinates = [];
+    emptyAllCells() {
+        let cellsToClear = this.foodCoordinates.concat(this.snakeCoordinates);
+        this.foodCoordinates = [];
+        this.snakeCoordinates = [];
         for (var i = 0, j = cellsToClear.length; i < j; i++) {
-            cells[cellsToClear[i].x][cellsToClear[i].y].setStatus("empty");
+            this.cells[cellsToClear[i].x][cellsToClear[i].y].setStatus("empty");
         }
     }
 
-    function incrementScore() {
-        document.getElementById('score').innerHTML = ++gameScore;
+    incrementScore() {
+        document.getElementById('score').innerHTML = ++this.gameScore;
     }
 
-    function resetScore() {
+    resetScore() {
         document.getElementById('score').innerHTML = 0;
-        gameScore = 0;
+        this.gameScore = 0;
     }
 
-    function getNextCoordinates(initial, direction) {
+    getNextCoordinates(initial, direction) {
         let nextCoordinates = null;
         switch (direction) {
             case "UP":
@@ -403,59 +410,58 @@ function gameManager() {
         return nextCoordinates;
     }
 
-    function addNextToSnake(nextCoordinates) {
-        cells[nextCoordinates.x][nextCoordinates.y].setStatus("snake");
-        snakeCoordinates.unshift(nextCoordinates);
+    addNextToSnake(nextCoordinates) {
+        this.cells[nextCoordinates.x][nextCoordinates.y].setStatus("snake");
+        this.snakeCoordinates.unshift(nextCoordinates);
     }
 
-    function removeLastFromSnake(lastCoordinates) {
-        cells[lastCoordinates.x][lastCoordinates.y].setStatus("empty");
-        snakeCoordinates.pop();
+    removeLastFromSnake(lastCoordinates) {
+        this.cells[lastCoordinates.x][lastCoordinates.y].setStatus("empty");
+        this.snakeCoordinates.pop();
     }
 
-    function eatFood(foodIndex) {
+    eatFood(foodIndex) {
         // remove food
-        foodCoordinates.splice(foodIndex, 1);
+        this.foodCoordinates.splice(foodIndex, 1);
         // respawn food
-        foodCoordinates = spawnFood(foodCoordinates);
+        this.foodCoordinates = spawnFood(foodCoordinates);
         // update score 
         incrementScore();
         // TODO: digest animation ?
     }
 
-    function getFoodCollisionIndex(nextCoordinates) {
-        return foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
+    getFoodCollisionIndex(nextCoordinates) {
+        return this.foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
     }
 
-    function fatalCollision(nextCoordinates) {
-        if (nextCoordinates.x > gameWidthInCells - 1 || nextCoordinates.y > gameHeightInCells - 1
+    fatalCollision(nextCoordinates) {
+        if (nextCoordinates.x > GAME_DIMS.WIDTH_IN_CELLS - 1 || nextCoordinates.y > GAME_DIMS.HEIGHT_IN_CELLS - 1
             || nextCoordinates.y < 0 || nextCoordinates.x < 0
-            || snakeCoordinates.some(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y)) {
+            || this.snakeCoordinates.some(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y)) {
             return true;
         }
         return false;
     }
 
-    // i dont like this weird return stuff plus class vars..
-    function evalSnakeDirection() {
-        let prevDirection = snakeDirection;
+    evalSnakeDirection() {
+        let prevDirection = this.snakeDirection;
         do {
-            snakeDirection = snakeDirectionStack.pop();
-        } while (conflict(prevDirection, snakeDirection));
+            this.snakeDirection = this.snakeDirectionStack.pop();
+        } while (conflict(prevDirection, this.snakeDirection));
 
-        if (snakeDirection === undefined) snakeDirection = prevDirection;
+        if (this.snakeDirection === undefined) this.snakeDirection = prevDirection;
     }
 
-    function nextFrame() {
-        if (gameIsPaused) return;
+    nextFrame() {
+        if (this.gameIsPaused) return;
 
-        const firstCoordinates = snakeCoordinates[0];
-        const lastCoordinates = snakeCoordinates[snakeCoordinates.length - 1];
+        const firstCoordinates = this.snakeCoordinates[0];
+        const lastCoordinates = this.snakeCoordinates[snakeCoordinates.length - 1];
         let nextCoordinates = firstCoordinates;
 
         evalSnakeDirection();
 
-        nextCoordinates = getNextCoordinates(firstCoordinates, snakeDirection);
+        nextCoordinates = getNextCoordinates(firstCoordinates, this.snakeDirection);
 
         // TODO: proper style for return and call function even if return value is not important and unused.
         if (fatalCollision(nextCoordinates)) return gameOver();
@@ -475,20 +481,18 @@ function gameManager() {
         }
 
         // request new frame every FRAME_INTERVAL
-        setTimeout(() => { frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL);
+        setTimeout(() => { this.frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL);
     }
 
-    // request first frame
-    nextFrame();
 }
 
 // TODO: reduce the need for this by instead representing directions with numbers.. or even enum! doing some div or mod stuff
 // helper function: return true if the direction arguments conflict, otherwise return false (even if an argument is undefined)
-function conflict(firstDir, secondDir) {
-    if (firstDir === "UP" && secondDir === "DOWN") return true;
-    if (firstDir === "DOWN" && secondDir === "UP") return true;
-    if (firstDir === "LEFT" && secondDir === "RIGHT") return true;
-    if (firstDir === "RIGHT" && secondDir === "LEFT") return true;
+function conflict(firstDirection, secondDirection) {
+    if (firstDirection === "UP" && secondDirection === "DOWN") return true;
+    if (firstDirection === "DOWN" && secondDirection === "UP") return true;
+    if (firstDirection === "LEFT" && secondDirection === "RIGHT") return true;
+    if (firstDirection === "RIGHT" && secondDirection === "LEFT") return true;
     return false
 }
 
