@@ -34,6 +34,13 @@ body {
     transition: opacity 1s ease-in;
 }
 
+#game-over-text {
+    text-align: center;
+    position: absolute;
+    white-space: nowrap;
+    z-index: -1;
+}
+
 #pause-btn-wrapper {
     position: absolute;
     white-space: nowrap;
@@ -62,6 +69,10 @@ body {
 #play-again-text {
     color: rgb(100, 100, 100);
     transition: 0.2s;
+    text-align: center;
+    white-space: nowrap;
+    z-index: -1;
+    
 }
 
 #play-again-text:hover {

@@ -141,7 +141,7 @@ function setupScreen() {
     gameOverText.style.top = `${cellSize * ((GAME_DIMS.HEIGHT_IN_CELLS * .5) - 4)}px`;
     gameOverText.style.padding = `${cellSize / 2}px`;
 
-    let playAgainText = document.createElement("div");
+    let playAgainText = document.getElementById('play-again-text');
     playAgainText.style.fontSize = `${cellSize}px`;
     playAgainText.style.padding = `${cellSize / 2}px`;
 
@@ -291,7 +291,7 @@ class SnakeGame {
     gameOver() {
         window.cancelAnimationFrame(this.frameRequest);
         this.gameIsPaused = true;
-        document.getElementById('game-over-disp').style.opacity = ".5";
+        document.getElementById('game-over-display').style.opacity = ".5";
         setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
         setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
         document.getElementById('play-again-text').addEventListener('click', this.newGame.bind(this));
@@ -299,7 +299,7 @@ class SnakeGame {
 
     removeGameOverDisplay() {
         document.getElementById('play-again-text').removeEventListener('click', this.newGame.bind(this));
-        document.getElementById('game-over-disp').style.opacity = "0";
+        document.getElementById('game-over-display').style.opacity = "0";
         document.getElementById('game-over-text').style.zIndex = -1;
         document.getElementById('play-again-text').style.zIndex = -1;
     }
