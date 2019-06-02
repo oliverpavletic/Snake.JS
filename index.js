@@ -1,14 +1,15 @@
-/* JAVASCRIPT SNAKE by Oliver Pavletic */
+/** 
+ * @Project JAVASCRIPT SNAKE 
+ * @Author Oliver Pavletic 
+ * @Date May 2019
+ * */
 
 const FRAME_INTERVAL = 100; // miliseconds
 const GAME_DIMS = { HEIGHT_IN_CELLS: 27, WIDTH_IN_CELLS: 48, MARGIN_IN_CELLS: 5, ASPECT_RATIO: (16 / 9) };
 const NUM_FOOD_PIECES = 1;
 const SNAKE_INIT_SIZE = 5;
 const SNAKE_INIT_DIR = "RIGHT";
-
-// TODO: CSS Class Variables
-const GAME_CONT_COLOR = "#75aaff";
-const CELL_COLOR_SCHEME = { empty: "#d4e2fc", food: "yellow", snake: "red", digest: "green" };
+const VALID_STATUS = ["empty", "snake", "food"];
 
 class Cell {
     constructor(x, y, size, status) {
@@ -20,9 +21,10 @@ class Cell {
     }
 
     setStatus(newStatus) {
-        this.status = newStatus;
-        let cell = document.getElementById(this.id);
-        cell.style.background = CELL_COLOR_SCHEME[this.status];
+        if (VALID_STATUS.includes(newStatus)) {
+            document.getElementById(this.id).className = newStatus;
+            this.status = newStatus;
+        }
     }
 
     get html() {
@@ -31,119 +33,18 @@ class Cell {
 
     generateHTML() {
         let div = document.createElement("div");
-        div.style.background = CELL_COLOR_SCHEME[this.status];
+        div.className = this.status;
         div.style.height = `${this.size}px`;
         div.style.width = `${this.size}px`;
         div.style.position = "absolute";
         div.style.left = `${this.x * this.size}px`;
         div.style.top = `${this.y * this.size}px`;
-        //div.style.border = "solid";
-        // div.className = "cell" TODO: modify using style sheet selectors! reduce clutter & repition!
         div.id = this.id;
         return div;
     }
 }
 
-// set up the game board and cells
-window.onload = () => {
-    let dimensions = getScreenDimensions();
-    let cellSize = setupScreen(dimensions)
-    let game = new SnakeGame(cellSize);
-    game.start();
-}
-
-// If screen is resized, reload the page
-// window.onresize = function () { location.reload(); }
-
-// TODO: think of a better name for this ... 
-function getScreenDimensions() {
-    let bounds = getBounds();
-
-    let screenDimensions = {
-        screenHeight: bounds.height,
-        screenWidth: bounds.width,
-        heightCorrection: 0,
-        widthCorrection: 0,
-        topMargin: 0,
-        sideMargin: 0
-    };
-
-    let gameHeightInCells = null;
-    let gameWidthInCells = null;
-    let screenAspectRatio = screenDimensions.screenWidth / screenDimensions.screenHeight;
-    let gameAspectRation = GAME_DIMS.WIDTH_IN_CELLS / GAME_DIMS.HEIGHT_IN_CELLS;
-
-    // max out the height, compensate the width
-    if (gameAspectRation < screenAspectRatio) {
-        // total height (cells)
-        gameHeightInCells = GAME_DIMS.HEIGHT_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
-        // cell size (px)
-        screenDimensions.cellSize = Math.floor(screenDimensions.screenHeight / gameHeightInCells);
-        // width correction (px)
-        screenDimensions.widthCorrection = screenDimensions.screenWidth - (GAME_DIMS.WIDTH_IN_CELLS * screenDimensions.cellSize);
-        // top
-        screenDimensions.topMargin = GAME_DIMS.MARGIN_IN_CELLS * screenDimensions.cellSize; ``
-        // side
-        screenDimensions.sideMargin = screenDimensions.widthCorrection / 2;
-    } else {
-        // total width (cells)
-        gameWidthInCells = GAME_DIMS.WIDTH_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
-        // cell size (px)
-        screenDimensions.cellSize = Math.floor(screenDimensions.screenWidth / gameWidthInCells);
-        // height correction
-        screenDimensions.heightCorrection = screenDimensions.screenHeight - (GAME_DIMS.HEIGHT_IN_CELLS * screenDimensions.cellSize);
-        // top
-        screenDimensions.topMargin = screenDimensions.heightCorrection / 2;
-        // side
-        screenDimensions.sideMargin = GAME_DIMS.MARGIN_IN_CELLS * screenDimensions.cellSize;
-    }
-
-    return screenDimensions;
-}
-
-function setupScreen(dimensions) {
-    Object.assign(this, dimensions);
-
-    let gameContainer = document.getElementById('game-container');
-    gameContainer.style.background = GAME_CONT_COLOR;
-    gameContainer.style.height = `${screenHeight}px`;
-    gameContainer.style.width = `${screenWidth}px`;
-
-    let scoreDisplay = document.getElementById('score-display');
-    scoreDisplay.style.fontSize = `${cellSize}px`;
-    scoreDisplay.style.padding = `${cellSize / 2}px`;
-
-    let pauseButton = document.getElementById('pause-btn-wrapper')
-    pauseButton.style.right = `${-(cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
-    pauseButton.style.fontSize = `${cellSize}px`;
-    pauseButton.style.padding = `${cellSize / 2}px`;
-
-    let snakeContainer = document.getElementById('snake-container');
-    snakeContainer.style.top = `${topMargin}px`;
-    snakeContainer.style.left = `${sideMargin}px`;
-
-    let pauseDisplay = document.getElementById('pause-display');
-    pauseDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
-    pauseDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
-
-    let gameOverDisplay = document.getElementById('game-over-display')
-    gameOverDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
-    gameOverDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
-
-    let gameOverText = document.getElementById('game-over-text');
-    gameOverText.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
-    gameOverText.style.fontSize = `${2 * cellSize}px`;
-    gameOverText.style.top = `${cellSize * ((GAME_DIMS.HEIGHT_IN_CELLS * .5) - 4)}px`;
-    gameOverText.style.padding = `${cellSize / 2}px`;
-
-    let playAgainText = document.getElementById('play-again-text');
-    playAgainText.style.fontSize = `${cellSize}px`;
-    playAgainText.style.padding = `${cellSize / 2}px`;
-
-    return cellSize;
-}
-
-// game manager
+// STYLE: binding this when calling all internal functions to avoid repeatedly calling "this?"
 class SnakeGame {
     constructor(cellSize) {
         this.cellSize = cellSize;
@@ -165,7 +66,10 @@ class SnakeGame {
         // add event listener to enable snake direction change
         window.addEventListener("keydown", e => {
             // button is not held down such that it is automatically repeating
-            if (!e.repeat) {
+            if (e.key === "p") {
+                this.togglePauseScreen();
+
+            } else if (!this.gameIsPaused && !e.repeat) {
                 // arrow keys and WASD
                 switch (e.key) {
                     case "ArrowUp":
@@ -184,12 +88,10 @@ class SnakeGame {
                     case "d":
                         this.snakeDirectionStack.unshift("RIGHT");
                         break;
-                    case "p":
-                        this.togglePauseScreen();
-                        break;
                 }
             }
         });
+
         this.nextFrame();
     }
 
@@ -220,12 +122,12 @@ class SnakeGame {
 
         // add center cell to snake
         let center = { x: Math.floor(GAME_DIMS.WIDTH_IN_CELLS / 2), y: Math.floor(GAME_DIMS.HEIGHT_IN_CELLS / 2) };
-        this.cells[center.x][center.y].setStatus("snake"); // FLAG: refactor
+        this.cells[center.x][center.y].setStatus("snake");
         coordinates.push(center);
 
         // add remaining cells to snake
         for (var i = 0; i < SNAKE_INIT_SIZE - 1; i++) {
-            this.cells[center.x - (i + 1)][center.y].setStatus("snake"); // FLAG: refactor
+            this.cells[center.x - (i + 1)][center.y].setStatus("snake");
             coordinates.push({ x: center.x - (i + 1), y: center.y });
         }
 
@@ -246,7 +148,7 @@ class SnakeGame {
                 randomCell = { x: Math.floor(Math.random() * GAME_DIMS.WIDTH_IN_CELLS), y: Math.floor(Math.random() * GAME_DIMS.HEIGHT_IN_CELLS) };
             } while ((newFoodCoordinates.concat(this.snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
 
-            this.cells[randomCell.x][randomCell.y].setStatus("food"); // FLAG: refactor
+            this.cells[randomCell.x][randomCell.y].setStatus("food");
             newFoodCoordinates.push(randomCell);
         }
 
@@ -264,7 +166,6 @@ class SnakeGame {
             pauseDisplay.style.zIndex = "-1";
             this.nextFrame();
         } else { // pause game
-            window.cancelAnimationFrame(this.frameRequest);
             pauseDisplay.style.zIndex = "1";
             pauseButton = document.getElementById('pause-btn');
             pauseButton.id = "pause-btn-special";
@@ -280,11 +181,13 @@ class SnakeGame {
         this.snakeCoordinates = this.spawnSnake();
         this.gameIsPaused = false;
         this.nextFrame();
+        document.getElementById('pause-btn-wrapper').style.zIndex = 2;
     }
 
     gameOver() {
         window.cancelAnimationFrame(this.frameRequest);
         this.gameIsPaused = true;
+        document.getElementById('pause-btn-wrapper').style.zIndex = 1;
         document.getElementById('game-over-display').style.opacity = ".5";
         setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
         setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
@@ -384,7 +287,7 @@ class SnakeGame {
     }
 
     nextFrame() {
-        if (this.gameIsPaused) return;
+        if (this.gameIsPaused) window.cancelAnimationFrame(this.frameRequest);
 
         const firstCoordinates = this.snakeCoordinates[0];
         const lastCoordinates = this.snakeCoordinates[this.snakeCoordinates.length - 1];
@@ -411,14 +314,114 @@ class SnakeGame {
             this.removeLastFromSnake(lastCoordinates);
         }
 
+        window.cancelAnimationFrame(this.frameRequest);
+
         // request new frame every FRAME_INTERVAL
-        setTimeout(() => { this.frameRequest = window.requestAnimationFrame(this.nextFrame.bind(this)) }, FRAME_INTERVAL);
+        setTimeout(() => { this.frameRequest = window.requestAnimationFrame(this.nextFrame.bind(this)); }, FRAME_INTERVAL);
     }
 
 }
 
-// TODO: reduce the need for this by instead representing directions with numbers.. or even enum! doing some div or mod stuff
-// helper function: return true if the direction arguments conflict, otherwise return false (even if an argument is undefined)
+// set up the game board and cells
+window.onload = () => {
+    let dimensions = getScreenDimensions();
+    let cellSize = setupScreen(dimensions)
+    let game = new SnakeGame(cellSize);
+    game.start();
+}
+
+// If screen is resized, reload the page
+// window.onresize = function () { location.reload(); }
+
+// STYLE: is 'get' an appropriate prefix?
+function getScreenDimensions() {
+    let bounds = getBounds();
+
+    let screenDimensions = {
+        screenHeight: bounds.height,
+        screenWidth: bounds.width,
+        heightCorrection: 0,
+        widthCorrection: 0,
+        topMargin: 0,
+        sideMargin: 0
+    };
+
+    let gameHeightInCells = null;
+    let gameWidthInCells = null;
+    let screenAspectRatio = screenDimensions.screenWidth / screenDimensions.screenHeight;
+    let gameAspectRation = GAME_DIMS.WIDTH_IN_CELLS / GAME_DIMS.HEIGHT_IN_CELLS;
+
+    // max out the height, compensate the width
+    if (gameAspectRation < screenAspectRatio) {
+        // total height (cells)
+        gameHeightInCells = GAME_DIMS.HEIGHT_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
+        // cell size (px)
+        screenDimensions.cellSize = Math.floor(screenDimensions.screenHeight / gameHeightInCells);
+        // width correction (px)
+        screenDimensions.widthCorrection = screenDimensions.screenWidth - (GAME_DIMS.WIDTH_IN_CELLS * screenDimensions.cellSize);
+        // top
+        screenDimensions.topMargin = GAME_DIMS.MARGIN_IN_CELLS * screenDimensions.cellSize; ``
+        // side
+        screenDimensions.sideMargin = screenDimensions.widthCorrection / 2;
+    } else {
+        // total width (cells)
+        gameWidthInCells = GAME_DIMS.WIDTH_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
+        // cell size (px)
+        screenDimensions.cellSize = Math.floor(screenDimensions.screenWidth / gameWidthInCells);
+        // height correction
+        screenDimensions.heightCorrection = screenDimensions.screenHeight - (GAME_DIMS.HEIGHT_IN_CELLS * screenDimensions.cellSize);
+        // top
+        screenDimensions.topMargin = screenDimensions.heightCorrection / 2;
+        // side
+        screenDimensions.sideMargin = GAME_DIMS.MARGIN_IN_CELLS * screenDimensions.cellSize;
+    }
+
+    return screenDimensions;
+}
+
+// STYLE: is it appropriate to use Object.assign?
+function setupScreen(screenDimensions) {
+    Object.assign(this, screenDimensions);
+
+    let gameContainer = document.getElementById('game-container');
+    gameContainer.style.height = `${screenHeight}px`;
+    gameContainer.style.width = `${screenWidth}px`;
+
+    let scoreDisplay = document.getElementById('score-display');
+    scoreDisplay.style.fontSize = `${cellSize}px`;
+    scoreDisplay.style.padding = `${cellSize / 2}px`;
+
+    let pauseButton = document.getElementById('pause-btn-wrapper')
+    pauseButton.style.right = `${-(cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
+    pauseButton.style.fontSize = `${cellSize}px`;
+    pauseButton.style.padding = `${cellSize / 2}px`;
+
+    let snakeContainer = document.getElementById('snake-container');
+    snakeContainer.style.top = `${topMargin}px`;
+    snakeContainer.style.left = `${sideMargin}px`;
+
+    let pauseDisplay = document.getElementById('pause-display');
+    pauseDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
+    pauseDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+
+    let gameOverDisplay = document.getElementById('game-over-display')
+    gameOverDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
+    gameOverDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+
+    let gameOverText = document.getElementById('game-over-text');
+    gameOverText.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    gameOverText.style.fontSize = `${2 * cellSize}px`;
+    gameOverText.style.top = `${cellSize * ((GAME_DIMS.HEIGHT_IN_CELLS * .5) - 4)}px`;
+    gameOverText.style.padding = `${cellSize / 2}px`;
+
+    let playAgainText = document.getElementById('play-again-text');
+    playAgainText.style.fontSize = `${cellSize}px`;
+    playAgainText.style.padding = `${cellSize / 2}px`;
+
+    return cellSize;
+}
+
+// determines if there is a directional conflict
 function conflict(firstDirection, secondDirection) {
     if (firstDirection === "UP" && secondDirection === "DOWN") return true;
     if (firstDirection === "DOWN" && secondDirection === "UP") return true;

@@ -1,9 +1,28 @@
+:root {
+    --empty-cell-color:#d4e2fc;
+    --snake-cell-color:red;
+    --food-cell-color:yellow;
+}
+
 body {
     font-family: 'Press Start 2P', cursive;
     margin: 0;
 }
 
+.empty {
+    background: var(--empty-cell-color);
+}
+
+.snake {
+    background: var(--snake-cell-color);
+}
+
+.food {
+    background: var(--food-cell-color);
+}
+
 #game-container {
+    background: #75aaff;
     position: relative;
 }
 
