@@ -15,6 +15,8 @@ const GAME_DIMS = { HEIGHT_IN_CELLS: 27, WIDTH_IN_CELLS: 48, MARGIN_IN_CELLS: 5,
 const NUM_FOOD_PIECES = 1;
 const SNAKE_INIT_SIZE = 5;
 const SNAKE_INIT_DIR = "RIGHT";
+
+// TODO: CSS Class Variables
 const GAME_CONT_COLOR = "#75aaff";
 const CELL_COLOR_SCHEME = { empty: "#d4e2fc", food: "yellow", snake: "red", digest: "green" };
 
@@ -64,17 +66,10 @@ window.onload = () => {
 // window.onresize = function () { location.reload(); }
 
 function setupScreen() {
-    // TODO!!: clean up this section 
-    // TODO: put all 'well-defined' styles in a stylesheet file
-    // , only put what you need in js here.. try not to clutter the js... 
-
-    // get screen dimensions (px)
-    let bounds = getBounds();
+    let bounds = getBounds();   // (px)
     let screenHeight = bounds.height;
     let screenWidth = bounds.width;
 
-    // TODO: the cell size should be defined by EITHER width or height depending on if the 
-    // ratio is above 16:9 or below
     let screenAspectRatio = screenWidth / screenHeight;
     let gameAspectRation = GAME_DIMS.WIDTH_IN_CELLS / GAME_DIMS.HEIGHT_IN_CELLS;
 
@@ -85,6 +80,7 @@ function setupScreen() {
     let topMargin = 0;
     let sideMargin = 0;
 
+    // Can this be put into a function?
     // max out the height, compensate the width
     if (gameAspectRation < screenAspectRatio) {
         // total height (cells)
@@ -110,100 +106,44 @@ function setupScreen() {
         sideMargin = GAME_DIMS.MARGIN_IN_CELLS * cellSize;
     }
 
-    // define game container 
-    let gameContainer = document.createElement("div");
+
+    let gameContainer = document.getElementById('game-container');
     gameContainer.style.background = GAME_CONT_COLOR;
-    gameContainer.style.position = "relative";
     gameContainer.style.height = `${screenHeight}px`;
     gameContainer.style.width = `${screenWidth}px`;
-    gameContainer.id = "game-container";
 
-    // define score display
-    let scoreDisplay = document.createElement("div");
-    scoreDisplay.style.position = "absolute";
+
+    let scoreDisplay = document.getElementById('score-display');
     scoreDisplay.style.fontSize = `${cellSize}px`;
     scoreDisplay.style.padding = `${cellSize / 2}px`;
-    scoreDisplay.innerHTML = "SCORE:<span id=\"score\">0</span>";
-    scoreDisplay.style.color = "black";
-    scoreDisplay.id = "score-display";
-    scoreDisplay.style.zIndex = "1";
 
-    // define pause button
-    let pauseButton = document.createElement("div");
-    pauseButton.style.position = "absolute";
+
+    let pauseButton = document.getElementById('pause-btn-wrapper')
     pauseButton.style.right = `${-(cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
     pauseButton.style.fontSize = `${cellSize}px`;
     pauseButton.style.padding = `${cellSize / 2}px`;
-    pauseButton.style.whiteSpace = "nowrap";
-    pauseButton.innerHTML = "<span id=\"pause-btn\">Pause</span>";
-    pauseButton.style.zIndex = "2";
-    pauseButton.id = "pause-button-wrapper";
 
-    // define snake container 
-    let snakeContainer = document.createElement("div");
+    let snakeContainer = document.getElementById('snake-container');
     snakeContainer.style.top = `${topMargin}px`;
     snakeContainer.style.left = `${sideMargin}px`;
-    snakeContainer.style.position = "relative";
-    snakeContainer.style.display = "inline-block";
-    snakeContainer.id = "snake-container";
 
-    let pauseDisplay = document.createElement("div");
+    let pauseDisplay = document.getElementById('pause-display');
     pauseDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
     pauseDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
-    pauseDisplay.style.position = "absolute";
-    pauseDisplay.style.zIndex = "-1";
-    pauseDisplay.style.opacity = ".5";
-    pauseDisplay.style.background = "black";
-    pauseDisplay.id = "pause-display";
 
-    let gameOverDisplay = document.createElement("div");
+    let gameOverDisplay = document.getElementById('game-over-display')
     gameOverDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
     gameOverDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
-    gameOverDisplay.style.position = "absolute";
-    gameOverDisplay.style.zIndex = "2";
-    gameOverDisplay.style.opacity = "0";
-    gameOverDisplay.style.background = "red";
-    gameOverDisplay.id = "game-over-disp";
 
-    let gameOverText = document.createElement("div");
+    let gameOverText = document.getElementById('game-over-text');
     gameOverText.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
-    gameOverText.style.textAlign = "center";
-    gameOverText.style.position = "absolute";
-    gameOverText.style.whiteSpace = "nowrap";
     gameOverText.style.fontSize = `${2 * cellSize}px`;
     gameOverText.style.top = `${cellSize * ((GAME_DIMS.HEIGHT_IN_CELLS * .5) - 4)}px`;
     gameOverText.style.padding = `${cellSize / 2}px`;
-    gameOverText.style.zIndex = "-1";
-    gameOverText.innerText = "Game Over";
-    gameOverText.id = "game-over-text";
 
     let playAgainText = document.createElement("div");
-    playAgainText.style.textAlign = "center";
-    playAgainText.style.whiteSpace = "nowrap";
     playAgainText.style.fontSize = `${cellSize}px`;
-    playAgainText.style.zIndex = "-1";
     playAgainText.style.padding = `${cellSize / 2}px`;
-    playAgainText.innerText = "Play Again";
-    playAgainText.id = "play-again-text";
-
-    gameOverText.appendChild(playAgainText);
-    snakeContainer.appendChild(gameOverText);
-
-    // append game over display
-    snakeContainer.append(gameOverDisplay);
-
-    // append score display to snake container
-    snakeContainer.appendChild(scoreDisplay);
-
-    // append pause button to snake container
-    snakeContainer.appendChild(pauseButton);
-    snakeContainer.appendChild(pauseDisplay);
-
-    // append snake container to game container
-    gameContainer.appendChild(snakeContainer);
-
-    // append game container to document body
-    document.body.appendChild(gameContainer);
 
     return cellSize;
 }

@@ -3,6 +3,43 @@ body {
     margin: 0;
 }
 
+#game-container {
+    position: relative;
+}
+
+#snake-container {
+    position: relative;
+    display: inline-block;
+}
+
+#score-display {
+    position: absolute;
+    color: black;
+    z-index: 1;
+}
+
+#pause-display {
+    position: absolute;
+    z-index: -1;
+    opacity: .5;
+    background: black;
+
+}
+
+#game-over-display {
+    position: absolute;
+    z-index: 2;
+    opacity: 0;
+    background: red;
+    transition: opacity 1s ease-in;
+}
+
+#pause-btn-wrapper {
+    position: absolute;
+    white-space: nowrap;
+    z-index: 2;
+}
+
 #pause-btn {
     transition: 0.2s;
     color: grey;
@@ -20,10 +57,6 @@ body {
 
 #pause-btn-special:hover {
     color: whitesmoke;
-}
-
-#game-over-disp {
-    transition: opacity 1s ease-in;
 }
 
 #play-again-text {
