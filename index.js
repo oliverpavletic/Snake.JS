@@ -65,87 +65,92 @@ window.onload = () => {
 // If screen is resized, reload the page
 // window.onresize = function () { location.reload(); }
 
-function setupScreen() {
-    let bounds = getBounds();   // (px)
-    let screenHeight = bounds.height;
-    let screenWidth = bounds.width;
+function computeOtherGameDimensions() {
+    let bounds = getBounds();
 
-    let screenAspectRatio = screenWidth / screenHeight;
+    let dimensions = {
+        screenHeight: bounds.height,
+        screenWidth: bounds.width,
+        totalWidthInCells: null,
+        totalHeightInCells: null,
+        heightCorrection: 0,
+        widthCorrection: 0,
+        topMargin: 0,
+        sideMargin: 0
+    };
+
+    let screenAspectRatio = dimensions.screenWidth / dimensions.screenHeight;
     let gameAspectRation = GAME_DIMS.WIDTH_IN_CELLS / GAME_DIMS.HEIGHT_IN_CELLS;
 
-    let totalWidthInCells = null;
-    let totalHeightInCells = null;
-    let heightCorrection = 0;
-    let widthCorrection = 0;
-    let topMargin = 0;
-    let sideMargin = 0;
-
-    // Can this be put into a function?
     // max out the height, compensate the width
     if (gameAspectRation < screenAspectRatio) {
         // total height (cells)
-        totalHeightInCells = GAME_DIMS.HEIGHT_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
+        dimensions.totalHeightInCells = GAME_DIMS.HEIGHT_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
         // cell size (px)
-        cellSize = Math.floor(screenHeight / totalHeightInCells);
+        dimensions.cellSize = Math.floor(dimensions.screenHeight / dimensions.totalHeightInCells);
         // width correction (px)
-        widthCorrection = screenWidth - (GAME_DIMS.WIDTH_IN_CELLS * cellSize);
+        dimensions.widthCorrection = dimensions.screenWidth - (GAME_DIMS.WIDTH_IN_CELLS * dimensions.cellSize);
         // top
-        topMargin = GAME_DIMS.MARGIN_IN_CELLS * cellSize; ``
+        dimensions.topMargin = GAME_DIMS.MARGIN_IN_CELLS * dimensions.cellSize; ``
         // side
-        sideMargin = widthCorrection / 2;
+        dimensions.sideMargin = dimensions.widthCorrection / 2;
     } else {
         // total width (cells)
-        totalWidthInCells = GAME_DIMS.WIDTH_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
+        dimensions.totalWidthInCells = GAME_DIMS.WIDTH_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
         // cell size (px)
-        cellSize = Math.floor(screenWidth / totalWidthInCells);
+        dimensions.cellSize = Math.floor(dimensions.screenWidth / dimensions.totalWidthInCells);
         // height correction
-        heightCorrection = screenHeight - (GAME_DIMS.HEIGHT_IN_CELLS * cellSize);
+        dimensions.heightCorrection = dimensions.screenHeight - (GAME_DIMS.HEIGHT_IN_CELLS * dimensions.cellSize);
         // top
-        topMargin = heightCorrection / 2;
+        dimensions.topMargin = dimensions.heightCorrection / 2;
         // side
-        sideMargin = GAME_DIMS.MARGIN_IN_CELLS * cellSize;
+        dimensions.sideMargin = GAME_DIMS.MARGIN_IN_CELLS * dimensions.cellSize;
     }
 
+    return dimensions;
+}
+function setupScreen() {
+    let dimensions = computeOtherGameDimensions();
 
     let gameContainer = document.getElementById('game-container');
     gameContainer.style.background = GAME_CONT_COLOR;
-    gameContainer.style.height = `${screenHeight}px`;
-    gameContainer.style.width = `${screenWidth}px`;
+    gameContainer.style.height = `${dimensions.screenHeight}px`;
+    gameContainer.style.width = `${dimensions.screenWidth}px`;
 
 
     let scoreDisplay = document.getElementById('score-display');
-    scoreDisplay.style.fontSize = `${cellSize}px`;
-    scoreDisplay.style.padding = `${cellSize / 2}px`;
+    scoreDisplay.style.fontSize = `${dimensions.cellSize}px`;
+    scoreDisplay.style.padding = `${dimensions.cellSize / 2}px`;
 
 
     let pauseButton = document.getElementById('pause-btn-wrapper')
-    pauseButton.style.right = `${-(cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
-    pauseButton.style.fontSize = `${cellSize}px`;
-    pauseButton.style.padding = `${cellSize / 2}px`;
+    pauseButton.style.right = `${-(dimensions.cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
+    pauseButton.style.fontSize = `${dimensions.cellSize}px`;
+    pauseButton.style.padding = `${dimensions.cellSize / 2}px`;
 
     let snakeContainer = document.getElementById('snake-container');
-    snakeContainer.style.top = `${topMargin}px`;
-    snakeContainer.style.left = `${sideMargin}px`;
+    snakeContainer.style.top = `${dimensions.topMargin}px`;
+    snakeContainer.style.left = `${dimensions.sideMargin}px`;
 
     let pauseDisplay = document.getElementById('pause-display');
-    pauseDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
-    pauseDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    pauseDisplay.style.height = `${dimensions.cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
+    pauseDisplay.style.width = `${dimensions.cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
 
     let gameOverDisplay = document.getElementById('game-over-display')
-    gameOverDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
-    gameOverDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    gameOverDisplay.style.height = `${dimensions.cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
+    gameOverDisplay.style.width = `${dimensions.cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
 
     let gameOverText = document.getElementById('game-over-text');
-    gameOverText.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
-    gameOverText.style.fontSize = `${2 * cellSize}px`;
-    gameOverText.style.top = `${cellSize * ((GAME_DIMS.HEIGHT_IN_CELLS * .5) - 4)}px`;
-    gameOverText.style.padding = `${cellSize / 2}px`;
+    gameOverText.style.width = `${dimensions.cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    gameOverText.style.fontSize = `${2 * dimensions.cellSize}px`;
+    gameOverText.style.top = `${dimensions.cellSize * ((GAME_DIMS.HEIGHT_IN_CELLS * .5) - 4)}px`;
+    gameOverText.style.padding = `${dimensions.cellSize / 2}px`;
 
     let playAgainText = document.getElementById('play-again-text');
-    playAgainText.style.fontSize = `${cellSize}px`;
-    playAgainText.style.padding = `${cellSize / 2}px`;
+    playAgainText.style.fontSize = `${dimensions.cellSize}px`;
+    playAgainText.style.padding = `${dimensions.cellSize / 2}px`;
 
-    return cellSize;
+    return dimensions.cellSize;
 }
 
 // TODO: refactor with ES6 Class Syntax
