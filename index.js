@@ -59,7 +59,8 @@ class SnakeGame {
         this.frameRequest = null;
     }
 
-    start() {
+    // starts the game
+    run() {
         // add event listener for pause button 
         document.getElementById('pause-btn').addEventListener('click', this.togglePauseScreen.bind(this));
 
@@ -95,11 +96,11 @@ class SnakeGame {
         this.nextFrame();
     }
 
-    // TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
-    // and how to make it difficult to have conflicting 'truths'
-    // have one function where changing the status of a given cell also adds it to coordinates and such
+    addNextToSnake(nextCoordinates) {
+        this.cells[nextCoordinates.x][nextCoordinates.y].setStatus("snake");
+        this.snakeCoordinates.unshift(nextCoordinates);
+    }
 
-    // create cells
     createCells() {
         // define cell matrix
         let cells = [];
@@ -116,72 +117,41 @@ class SnakeGame {
         return cells;
     }
 
-    // spawn snake 
-    spawnSnake() {
-        let coordinates = [];
-
-        // add center cell to snake
-        let center = { x: Math.floor(GAME_DIMS.WIDTH_IN_CELLS / 2), y: Math.floor(GAME_DIMS.HEIGHT_IN_CELLS / 2) };
-        this.cells[center.x][center.y].setStatus("snake");
-        coordinates.push(center);
-
-        // add remaining cells to snake
-        for (var i = 0; i < SNAKE_INIT_SIZE - 1; i++) {
-            this.cells[center.x - (i + 1)][center.y].setStatus("snake");
-            coordinates.push({ x: center.x - (i + 1), y: center.y });
-        }
-
-        return coordinates;
+    eatFood(foodIndex) {
+        // remove food
+        this.foodCoordinates.splice(foodIndex, 1);
+        // respawn food
+        this.foodCoordinates = this.spawnFood(this.foodCoordinates);
+        // update score 
+        this.incrementScore();
+        // TODO: digest animation ?
     }
 
-    // spawn intial food
-    spawnFood(oldFoodCoordinates) {
-        let newFoodCoordinates = oldFoodCoordinates;
-        let numExistingFoodPieces = newFoodCoordinates.length;
-        let randomCell = null;
-
-        // spawn as many food pieces s.t the total pieces of food is always equal to NUM_FOOD_PIECES
-        for (var i = 0; i < NUM_FOOD_PIECES - numExistingFoodPieces; i++) {
-
-            // do-while to avoid duplicate food pieces and collisions with snake coordinates
-            do {
-                randomCell = { x: Math.floor(Math.random() * GAME_DIMS.WIDTH_IN_CELLS), y: Math.floor(Math.random() * GAME_DIMS.HEIGHT_IN_CELLS) };
-            } while ((newFoodCoordinates.concat(this.snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
-
-            this.cells[randomCell.x][randomCell.y].setStatus("food");
-            newFoodCoordinates.push(randomCell);
-        }
-
-        return newFoodCoordinates;
-    }
-
-
-    togglePauseScreen() {
-        let pauseDisplay = document.getElementById("pause-display");
-        let pauseButton = null;
-        this.gameIsPaused = !this.gameIsPaused;
-        if (!this.gameIsPaused) { // restart game
-            pauseButton = document.getElementById('pause-btn-special');
-            pauseButton.id = "pause-btn";
-            pauseDisplay.style.zIndex = "-1";
-            this.nextFrame();
-        } else { // pause game
-            pauseDisplay.style.zIndex = "1";
-            pauseButton = document.getElementById('pause-btn');
-            pauseButton.id = "pause-btn-special";
+    emptyAllCells() {
+        let cellsToClear = this.foodCoordinates.concat(this.snakeCoordinates);
+        this.foodCoordinates = [];
+        this.snakeCoordinates = [];
+        for (var i = 0, j = cellsToClear.length; i < j; i++) {
+            this.cells[cellsToClear[i].x][cellsToClear[i].y].setStatus("empty");
         }
     }
 
-    newGame() {
-        this.emptyAllCells();
-        this.removeGameOverDisplay();
-        this.snakeDirection = SNAKE_INIT_DIR;
-        this.foodCoordinates = this.spawnFood([]);
-        this.resetScore();
-        this.snakeCoordinates = this.spawnSnake();
-        this.gameIsPaused = false;
-        this.nextFrame();
-        document.getElementById('pause-btn-wrapper').style.zIndex = 2;
+    evalSnakeDirection() {
+        let prevDirection = this.snakeDirection;
+        do {
+            this.snakeDirection = this.snakeDirectionStack.pop();
+        } while (conflict(prevDirection, this.snakeDirection));
+
+        if (this.snakeDirection === undefined) this.snakeDirection = prevDirection;
+    }
+
+    fatalCollision(nextCoordinates) {
+        if (nextCoordinates.x > GAME_DIMS.WIDTH_IN_CELLS - 1 || nextCoordinates.y > GAME_DIMS.HEIGHT_IN_CELLS - 1
+            || nextCoordinates.y < 0 || nextCoordinates.x < 0
+            || this.snakeCoordinates.some(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y)) {
+            return true;
+        }
+        return false;
     }
 
     gameOver() {
@@ -194,29 +164,8 @@ class SnakeGame {
         document.getElementById('play-again-text').addEventListener('click', this.newGame.bind(this));
     }
 
-    removeGameOverDisplay() {
-        document.getElementById('play-again-text').removeEventListener('click', this.newGame.bind(this));
-        document.getElementById('game-over-display').style.opacity = "0";
-        document.getElementById('game-over-text').style.zIndex = -1;
-        document.getElementById('play-again-text').style.zIndex = -1;
-    }
-
-    emptyAllCells() {
-        let cellsToClear = this.foodCoordinates.concat(this.snakeCoordinates);
-        this.foodCoordinates = [];
-        this.snakeCoordinates = [];
-        for (var i = 0, j = cellsToClear.length; i < j; i++) {
-            this.cells[cellsToClear[i].x][cellsToClear[i].y].setStatus("empty");
-        }
-    }
-
-    incrementScore() {
-        document.getElementById('score').innerHTML = ++this.gameScore;
-    }
-
-    resetScore() {
-        document.getElementById('score').innerHTML = 0;
-        this.gameScore = 0;
+    getFoodCollisionIndex(nextCoordinates) {
+        return this.foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
     }
 
     getNextCoordinates(initial, direction) {
@@ -244,50 +193,24 @@ class SnakeGame {
         return nextCoordinates;
     }
 
-    addNextToSnake(nextCoordinates) {
-        this.cells[nextCoordinates.x][nextCoordinates.y].setStatus("snake");
-        this.snakeCoordinates.unshift(nextCoordinates);
+    incrementScore() {
+        document.getElementById('score').innerHTML = ++this.gameScore;
     }
 
-    removeLastFromSnake(lastCoordinates) {
-        this.cells[lastCoordinates.x][lastCoordinates.y].setStatus("empty");
-        this.snakeCoordinates.pop();
-    }
-
-    eatFood(foodIndex) {
-        // remove food
-        this.foodCoordinates.splice(foodIndex, 1);
-        // respawn food
-        this.foodCoordinates = this.spawnFood(this.foodCoordinates);
-        // update score 
-        this.incrementScore();
-        // TODO: digest animation ?
-    }
-
-    getFoodCollisionIndex(nextCoordinates) {
-        return this.foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
-    }
-
-    fatalCollision(nextCoordinates) {
-        if (nextCoordinates.x > GAME_DIMS.WIDTH_IN_CELLS - 1 || nextCoordinates.y > GAME_DIMS.HEIGHT_IN_CELLS - 1
-            || nextCoordinates.y < 0 || nextCoordinates.x < 0
-            || this.snakeCoordinates.some(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y)) {
-            return true;
-        }
-        return false;
-    }
-
-    evalSnakeDirection() {
-        let prevDirection = this.snakeDirection;
-        do {
-            this.snakeDirection = this.snakeDirectionStack.pop();
-        } while (conflict(prevDirection, this.snakeDirection));
-
-        if (this.snakeDirection === undefined) this.snakeDirection = prevDirection;
+    newGame() {
+        this.emptyAllCells();
+        this.removeGameOverDisplay();
+        this.snakeDirection = SNAKE_INIT_DIR;
+        this.foodCoordinates = this.spawnFood([]);
+        this.resetScore();
+        this.snakeCoordinates = this.spawnSnake();
+        this.gameIsPaused = false;
+        this.nextFrame();
+        document.getElementById('pause-btn-wrapper').style.zIndex = 2;
     }
 
     nextFrame() {
-        if (this.gameIsPaused) window.cancelAnimationFrame(this.frameRequest);
+        if (this.gameIsPaused) return;
 
         const firstCoordinates = this.snakeCoordinates[0];
         const lastCoordinates = this.snakeCoordinates[this.snakeCoordinates.length - 1];
@@ -320,6 +243,75 @@ class SnakeGame {
         setTimeout(() => { this.frameRequest = window.requestAnimationFrame(this.nextFrame.bind(this)); }, FRAME_INTERVAL);
     }
 
+    removeGameOverDisplay() {
+        document.getElementById('play-again-text').removeEventListener('click', this.newGame.bind(this));
+        document.getElementById('game-over-display').style.opacity = "0";
+        document.getElementById('game-over-text').style.zIndex = -1;
+        document.getElementById('play-again-text').style.zIndex = -1;
+    }
+
+    removeLastFromSnake(lastCoordinates) {
+        this.cells[lastCoordinates.x][lastCoordinates.y].setStatus("empty");
+        this.snakeCoordinates.pop();
+    }
+
+    resetScore() {
+        document.getElementById('score').innerHTML = 0;
+        this.gameScore = 0;
+    }
+
+    spawnFood(oldFoodCoordinates) {
+        let newFoodCoordinates = oldFoodCoordinates;
+        let numExistingFoodPieces = newFoodCoordinates.length;
+        let randomCell = null;
+
+        // spawn as many food pieces s.t the total pieces of food is always equal to NUM_FOOD_PIECES
+        for (var i = 0; i < NUM_FOOD_PIECES - numExistingFoodPieces; i++) {
+
+            // do-while to avoid duplicate food pieces and collisions with snake coordinates
+            do {
+                randomCell = { x: Math.floor(Math.random() * GAME_DIMS.WIDTH_IN_CELLS), y: Math.floor(Math.random() * GAME_DIMS.HEIGHT_IN_CELLS) };
+            } while ((newFoodCoordinates.concat(this.snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
+
+            this.cells[randomCell.x][randomCell.y].setStatus("food");
+            newFoodCoordinates.push(randomCell);
+        }
+
+        return newFoodCoordinates;
+    }
+
+    spawnSnake() {
+        let coordinates = [];
+
+        // add center cell to snake
+        let center = { x: Math.floor(GAME_DIMS.WIDTH_IN_CELLS / 2), y: Math.floor(GAME_DIMS.HEIGHT_IN_CELLS / 2) };
+        this.cells[center.x][center.y].setStatus("snake");
+        coordinates.push(center);
+
+        // add remaining cells to snake
+        for (var i = 0; i < SNAKE_INIT_SIZE - 1; i++) {
+            this.cells[center.x - (i + 1)][center.y].setStatus("snake");
+            coordinates.push({ x: center.x - (i + 1), y: center.y });
+        }
+
+        return coordinates;
+    }
+
+    togglePauseScreen() {
+        let pauseDisplay = document.getElementById("pause-display");
+        let pauseButton = null;
+        this.gameIsPaused = !this.gameIsPaused;
+        if (!this.gameIsPaused) { // restart game
+            pauseButton = document.getElementById('pause-btn-special');
+            pauseButton.id = "pause-btn";
+            pauseDisplay.style.zIndex = "-1";
+            this.nextFrame();
+        } else { // pause game
+            pauseDisplay.style.zIndex = "1";
+            pauseButton = document.getElementById('pause-btn');
+            pauseButton.id = "pause-btn-special";
+        }
+    }
 }
 
 // set up the game board and cells
@@ -327,7 +319,7 @@ window.onload = () => {
     let dimensions = getScreenDimensions();
     let cellSize = setupScreen(dimensions)
     let game = new SnakeGame(cellSize);
-    game.start();
+    game.run();
 }
 
 // If screen is resized, reload the page
@@ -430,7 +422,7 @@ function conflict(firstDirection, secondDirection) {
     return false
 }
 
-// returns window dimension bounds in px
+// returns window dimension bounds (px)
 function getBounds() {
     var e = window,
         a = "inner";

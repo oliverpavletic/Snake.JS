@@ -7,3 +7,8 @@ TODO: initiate a CSS transition when blocks go over signs
 TODO: main menu screen
 TODO: options
 TODO: maps/difficulties/etc.
+
+
+TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
+and how to make it difficult to have conflicting 'truths'
+have one function where changing the status of a given cell also adds it to coordinates and such
