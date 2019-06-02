@@ -60,9 +60,8 @@ window.onload = () => {
     game.start();
 }
 
-// TODO: when to resize?
 // If screen is resized, reload the page
-//window.onresize = function () { location.reload(); }
+// window.onresize = function () { location.reload(); }
 
 function setupScreen() {
     // TODO!!: clean up this section 
@@ -95,7 +94,7 @@ function setupScreen() {
         // width correction (px)
         widthCorrection = screenWidth - (GAME_DIMS.WIDTH_IN_CELLS * cellSize);
         // top
-        topMargin = GAME_DIMS.MARGIN_IN_CELLS * cellSize;
+        topMargin = GAME_DIMS.MARGIN_IN_CELLS * cellSize; ``
         // side
         sideMargin = widthCorrection / 2;
     } else {
@@ -223,12 +222,11 @@ class SnakeGame {
         this.gameScore = 0;
         this.gameIsPaused = false;
         this.frameRequest = null;
-
     }
 
     start() {
         // add event listener for pause button 
-        document.getElementById('pause-btn').addEventListener('click', togglePauseScreen);
+        document.getElementById('pause-btn').addEventListener('click', this.togglePauseScreen.bind(this));
 
         // add event listener to enable snake direction change
         window.addEventListener("keydown", e => {
@@ -253,13 +251,12 @@ class SnakeGame {
                         this.snakeDirectionStack.unshift("RIGHT");
                         break;
                     case "p":
-                        togglePauseScreen();
+                        this.togglePauseScreen();
                         break;
                 }
             }
         });
-
-        nextFrame();
+        this.nextFrame();
     }
 
     // TODO: refactor to combine cell.setStatus and coordinates.push, thinking about one source of truth,
@@ -272,9 +269,9 @@ class SnakeGame {
         let cells = [];
         for (var i = 0; i < GAME_DIMS.WIDTH_IN_CELLS; i++) {
             cells[i] = [];
-            for (var j = 0; j < GAME_DIMS.WIDTH_IN_CELLS; j++) {
+            for (var j = 0; j < GAME_DIMS.HEIGHT_IN_CELLS; j++) {
                 // assign cell to corresponding index in the cells matrix
-                this.cells[i][j] = new Cell(i, j, this.cellSize, "empty");
+                cells[i][j] = new Cell(i, j, this.cellSize, "empty");
                 // append newly created cell to game container
                 // TODO: append to local element and then add to DOM? efficiency question...
                 this.container.appendChild(cells[i][j].html);
@@ -331,7 +328,7 @@ class SnakeGame {
             pauseButton = document.getElementById('pause-btn-special');
             pauseButton.id = "pause-btn";
             pauseDisplay.style.zIndex = "-1";
-            nextFrame();
+            this.nextFrame();
         } else { // pause game
             window.cancelAnimationFrame(this.frameRequest);
             pauseDisplay.style.zIndex = "1";
@@ -341,14 +338,14 @@ class SnakeGame {
     }
 
     newGame() {
-        emptyAllCells();
-        removeGameOverDisplay();
+        this.emptyAllCells();
+        this.removeGameOverDisplay();
         this.snakeDirection = SNAKE_INIT_DIR;
-        this.foodCoordinates = spawnFood([]);
-        resetScore();
-        this.snakeCoordinates = spawnSnake();
+        this.foodCoordinates = this.spawnFood([]);
+        this.resetScore();
+        this.snakeCoordinates = this.spawnSnake();
         this.gameIsPaused = false;
-        nextFrame();
+        this.nextFrame();
     }
 
     gameOver() {
@@ -357,11 +354,11 @@ class SnakeGame {
         document.getElementById('game-over-disp').style.opacity = ".5";
         setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
         setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
-        document.getElementById('play-again-text').addEventListener('click', newGame);
+        document.getElementById('play-again-text').addEventListener('click', this.newGame.bind(this));
     }
 
     removeGameOverDisplay() {
-        document.getElementById('play-again-text').removeEventListener('click', newGame);
+        document.getElementById('play-again-text').removeEventListener('click', this.newGame.bind(this));
         document.getElementById('game-over-disp').style.opacity = "0";
         document.getElementById('game-over-text').style.zIndex = -1;
         document.getElementById('play-again-text').style.zIndex = -1;
@@ -424,9 +421,9 @@ class SnakeGame {
         // remove food
         this.foodCoordinates.splice(foodIndex, 1);
         // respawn food
-        this.foodCoordinates = spawnFood(foodCoordinates);
+        this.foodCoordinates = this.spawnFood(this.foodCoordinates);
         // update score 
-        incrementScore();
+        this.incrementScore();
         // TODO: digest animation ?
     }
 
@@ -456,32 +453,32 @@ class SnakeGame {
         if (this.gameIsPaused) return;
 
         const firstCoordinates = this.snakeCoordinates[0];
-        const lastCoordinates = this.snakeCoordinates[snakeCoordinates.length - 1];
+        const lastCoordinates = this.snakeCoordinates[this.snakeCoordinates.length - 1];
         let nextCoordinates = firstCoordinates;
 
-        evalSnakeDirection();
+        this.evalSnakeDirection();
 
-        nextCoordinates = getNextCoordinates(firstCoordinates, this.snakeDirection);
+        nextCoordinates = this.getNextCoordinates(firstCoordinates, this.snakeDirection);
 
         // TODO: proper style for return and call function even if return value is not important and unused.
-        if (fatalCollision(nextCoordinates)) return gameOver();
+        if (this.fatalCollision(nextCoordinates)) return this.gameOver();
 
         // no fatal collisions, so add next cell to snake 
-        addNextToSnake(nextCoordinates);
+        this.addNextToSnake(nextCoordinates);
 
         // handle food collision   
-        let foodIndex = getFoodCollisionIndex(nextCoordinates);
+        let foodIndex = this.getFoodCollisionIndex(nextCoordinates);
 
         if (foodIndex !== -1) {
             // food collision
-            eatFood(foodIndex);
+            this.eatFood(foodIndex);
         } else {
             // no food collision
-            removeLastFromSnake(lastCoordinates);
+            this.removeLastFromSnake(lastCoordinates);
         }
 
         // request new frame every FRAME_INTERVAL
-        setTimeout(() => { this.frameRequest = window.requestAnimationFrame(nextFrame) }, FRAME_INTERVAL);
+        setTimeout(() => { this.frameRequest = window.requestAnimationFrame(this.nextFrame.bind(this)) }, FRAME_INTERVAL);
     }
 
 }
