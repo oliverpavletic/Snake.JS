@@ -1,15 +1,5 @@
 /* JAVASCRIPT SNAKE by Oliver Pavletic */
 
-// TODO: declutter global scope
-
-// TODO: if no internet, set default text
-
-// FEATURES:
-// TODO: initiate a CSS transition when blocks go over signs
-// TODO: main menu screen
-// TODO: options
-// TODO: maps/difficulties/etc.
-
 const FRAME_INTERVAL = 100; // miliseconds
 const GAME_DIMS = { HEIGHT_IN_CELLS: 27, WIDTH_IN_CELLS: 48, MARGIN_IN_CELLS: 5, ASPECT_RATIO: (16 / 9) };
 const NUM_FOOD_PIECES = 1;
@@ -56,8 +46,8 @@ class Cell {
 
 // set up the game board and cells
 window.onload = () => {
-    // make game Manager call wait for setup screen to return...?
-    let cellSize = setupScreen();
+    let dimensions = getScreenDimensions();
+    let cellSize = setupScreen(dimensions)
     let game = new SnakeGame(cellSize);
     game.start();
 }
@@ -65,95 +55,94 @@ window.onload = () => {
 // If screen is resized, reload the page
 // window.onresize = function () { location.reload(); }
 
-function computeOtherGameDimensions() {
+// TODO: think of a better name for this ... 
+function getScreenDimensions() {
     let bounds = getBounds();
 
-    let dimensions = {
+    let screenDimensions = {
         screenHeight: bounds.height,
         screenWidth: bounds.width,
-        totalWidthInCells: null,
-        totalHeightInCells: null,
         heightCorrection: 0,
         widthCorrection: 0,
         topMargin: 0,
         sideMargin: 0
     };
 
-    let screenAspectRatio = dimensions.screenWidth / dimensions.screenHeight;
+    let gameHeightInCells = null;
+    let gameWidthInCells = null;
+    let screenAspectRatio = screenDimensions.screenWidth / screenDimensions.screenHeight;
     let gameAspectRation = GAME_DIMS.WIDTH_IN_CELLS / GAME_DIMS.HEIGHT_IN_CELLS;
 
     // max out the height, compensate the width
     if (gameAspectRation < screenAspectRatio) {
         // total height (cells)
-        dimensions.totalHeightInCells = GAME_DIMS.HEIGHT_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
+        gameHeightInCells = GAME_DIMS.HEIGHT_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
         // cell size (px)
-        dimensions.cellSize = Math.floor(dimensions.screenHeight / dimensions.totalHeightInCells);
+        screenDimensions.cellSize = Math.floor(screenDimensions.screenHeight / gameHeightInCells);
         // width correction (px)
-        dimensions.widthCorrection = dimensions.screenWidth - (GAME_DIMS.WIDTH_IN_CELLS * dimensions.cellSize);
+        screenDimensions.widthCorrection = screenDimensions.screenWidth - (GAME_DIMS.WIDTH_IN_CELLS * screenDimensions.cellSize);
         // top
-        dimensions.topMargin = GAME_DIMS.MARGIN_IN_CELLS * dimensions.cellSize; ``
+        screenDimensions.topMargin = GAME_DIMS.MARGIN_IN_CELLS * screenDimensions.cellSize; ``
         // side
-        dimensions.sideMargin = dimensions.widthCorrection / 2;
+        screenDimensions.sideMargin = screenDimensions.widthCorrection / 2;
     } else {
         // total width (cells)
-        dimensions.totalWidthInCells = GAME_DIMS.WIDTH_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
+        gameWidthInCells = GAME_DIMS.WIDTH_IN_CELLS + (2 * GAME_DIMS.MARGIN_IN_CELLS);
         // cell size (px)
-        dimensions.cellSize = Math.floor(dimensions.screenWidth / dimensions.totalWidthInCells);
+        screenDimensions.cellSize = Math.floor(screenDimensions.screenWidth / gameWidthInCells);
         // height correction
-        dimensions.heightCorrection = dimensions.screenHeight - (GAME_DIMS.HEIGHT_IN_CELLS * dimensions.cellSize);
+        screenDimensions.heightCorrection = screenDimensions.screenHeight - (GAME_DIMS.HEIGHT_IN_CELLS * screenDimensions.cellSize);
         // top
-        dimensions.topMargin = dimensions.heightCorrection / 2;
+        screenDimensions.topMargin = screenDimensions.heightCorrection / 2;
         // side
-        dimensions.sideMargin = GAME_DIMS.MARGIN_IN_CELLS * dimensions.cellSize;
+        screenDimensions.sideMargin = GAME_DIMS.MARGIN_IN_CELLS * screenDimensions.cellSize;
     }
 
-    return dimensions;
+    return screenDimensions;
 }
-function setupScreen() {
-    let dimensions = computeOtherGameDimensions();
+
+function setupScreen(dimensions) {
+    Object.assign(this, dimensions);
 
     let gameContainer = document.getElementById('game-container');
     gameContainer.style.background = GAME_CONT_COLOR;
-    gameContainer.style.height = `${dimensions.screenHeight}px`;
-    gameContainer.style.width = `${dimensions.screenWidth}px`;
-
+    gameContainer.style.height = `${screenHeight}px`;
+    gameContainer.style.width = `${screenWidth}px`;
 
     let scoreDisplay = document.getElementById('score-display');
-    scoreDisplay.style.fontSize = `${dimensions.cellSize}px`;
-    scoreDisplay.style.padding = `${dimensions.cellSize / 2}px`;
-
+    scoreDisplay.style.fontSize = `${cellSize}px`;
+    scoreDisplay.style.padding = `${cellSize / 2}px`;
 
     let pauseButton = document.getElementById('pause-btn-wrapper')
-    pauseButton.style.right = `${-(dimensions.cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
-    pauseButton.style.fontSize = `${dimensions.cellSize}px`;
-    pauseButton.style.padding = `${dimensions.cellSize / 2}px`;
+    pauseButton.style.right = `${-(cellSize * GAME_DIMS.WIDTH_IN_CELLS)}px`;
+    pauseButton.style.fontSize = `${cellSize}px`;
+    pauseButton.style.padding = `${cellSize / 2}px`;
 
     let snakeContainer = document.getElementById('snake-container');
-    snakeContainer.style.top = `${dimensions.topMargin}px`;
-    snakeContainer.style.left = `${dimensions.sideMargin}px`;
+    snakeContainer.style.top = `${topMargin}px`;
+    snakeContainer.style.left = `${sideMargin}px`;
 
     let pauseDisplay = document.getElementById('pause-display');
-    pauseDisplay.style.height = `${dimensions.cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
-    pauseDisplay.style.width = `${dimensions.cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    pauseDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
+    pauseDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
 
     let gameOverDisplay = document.getElementById('game-over-display')
-    gameOverDisplay.style.height = `${dimensions.cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
-    gameOverDisplay.style.width = `${dimensions.cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    gameOverDisplay.style.height = `${cellSize * GAME_DIMS.HEIGHT_IN_CELLS}px`;
+    gameOverDisplay.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
 
     let gameOverText = document.getElementById('game-over-text');
-    gameOverText.style.width = `${dimensions.cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
-    gameOverText.style.fontSize = `${2 * dimensions.cellSize}px`;
-    gameOverText.style.top = `${dimensions.cellSize * ((GAME_DIMS.HEIGHT_IN_CELLS * .5) - 4)}px`;
-    gameOverText.style.padding = `${dimensions.cellSize / 2}px`;
+    gameOverText.style.width = `${cellSize * GAME_DIMS.WIDTH_IN_CELLS}px`;
+    gameOverText.style.fontSize = `${2 * cellSize}px`;
+    gameOverText.style.top = `${cellSize * ((GAME_DIMS.HEIGHT_IN_CELLS * .5) - 4)}px`;
+    gameOverText.style.padding = `${cellSize / 2}px`;
 
     let playAgainText = document.getElementById('play-again-text');
-    playAgainText.style.fontSize = `${dimensions.cellSize}px`;
-    playAgainText.style.padding = `${dimensions.cellSize / 2}px`;
+    playAgainText.style.fontSize = `${cellSize}px`;
+    playAgainText.style.padding = `${cellSize / 2}px`;
 
-    return dimensions.cellSize;
+    return cellSize;
 }
 
-// TODO: refactor with ES6 Class Syntax
 // game manager
 class SnakeGame {
     constructor(cellSize) {

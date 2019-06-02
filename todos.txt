@@ -1,0 +1,9 @@
+TODO: declutter global scope
+
+TODO: if no internet, set default text
+
+FEATURES:
+TODO: initiate a CSS transition when blocks go over signs
+TODO: main menu screen
+TODO: options
+TODO: maps/difficulties/etc.
