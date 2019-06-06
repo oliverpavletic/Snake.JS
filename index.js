@@ -1,7 +1,7 @@
 /** 
- * @Project JAVASCRIPT SNAKE 
- * @Author Oliver Pavletic 
- * @Date May 2019
+ *  Project: JAVASCRIPT SNAKE 
+ *  Author: Oliver Pavletic 
+ *  Date: May 2019
  * */
 
 const FRAME_INTERVAL = 100; // miliseconds
@@ -61,15 +61,12 @@ class SnakeGame {
 
     // starts the game
     run() {
-        // add event listener for pause button 
         document.getElementById('pause-btn').addEventListener('click', this.togglePauseScreen.bind(this));
 
         // add event listener to enable snake direction change
         window.addEventListener("keydown", e => {
-            // button is not held down such that it is automatically repeating
             if (e.key === "p") {
                 this.togglePauseScreen();
-
             } else if (!this.gameIsPaused && !e.repeat) {
                 // arrow keys and WASD
                 switch (e.key) {
@@ -92,121 +89,7 @@ class SnakeGame {
                 }
             }
         });
-
         this.nextFrame();
-    }
-
-    addNextToSnake(nextCoordinates) {
-        this.cells[nextCoordinates.x][nextCoordinates.y].setStatus("snake");
-        this.snakeCoordinates.unshift(nextCoordinates);
-    }
-
-    createCells() {
-        // define cell matrix
-        let cells = [];
-        for (var i = 0; i < GAME_DIMS.WIDTH_IN_CELLS; i++) {
-            cells[i] = [];
-            for (var j = 0; j < GAME_DIMS.HEIGHT_IN_CELLS; j++) {
-                // assign cell to corresponding index in the cells matrix
-                cells[i][j] = new Cell(i, j, this.cellSize, "empty");
-                // append newly created cell to game container
-                // TODO: append to local element and then add to DOM? efficiency question...
-                this.container.appendChild(cells[i][j].html);
-            }
-        }
-        return cells;
-    }
-
-    eatFood(foodIndex) {
-        // remove food
-        this.foodCoordinates.splice(foodIndex, 1);
-        // respawn food
-        this.foodCoordinates = this.spawnFood(this.foodCoordinates);
-        // update score 
-        this.incrementScore();
-        // TODO: digest animation ?
-    }
-
-    emptyAllCells() {
-        let cellsToClear = this.foodCoordinates.concat(this.snakeCoordinates);
-        this.foodCoordinates = [];
-        this.snakeCoordinates = [];
-        for (var i = 0, j = cellsToClear.length; i < j; i++) {
-            this.cells[cellsToClear[i].x][cellsToClear[i].y].setStatus("empty");
-        }
-    }
-
-    evalSnakeDirection() {
-        let prevDirection = this.snakeDirection;
-        do {
-            this.snakeDirection = this.snakeDirectionStack.pop();
-        } while (conflict(prevDirection, this.snakeDirection));
-
-        if (this.snakeDirection === undefined) this.snakeDirection = prevDirection;
-    }
-
-    fatalCollision(nextCoordinates) {
-        if (nextCoordinates.x > GAME_DIMS.WIDTH_IN_CELLS - 1 || nextCoordinates.y > GAME_DIMS.HEIGHT_IN_CELLS - 1
-            || nextCoordinates.y < 0 || nextCoordinates.x < 0
-            || this.snakeCoordinates.some(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y)) {
-            return true;
-        }
-        return false;
-    }
-
-    gameOver() {
-        window.cancelAnimationFrame(this.frameRequest);
-        this.gameIsPaused = true;
-        document.getElementById('pause-btn-wrapper').style.zIndex = 1;
-        document.getElementById('game-over-display').style.opacity = ".5";
-        setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
-        setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
-        document.getElementById('play-again-text').addEventListener('click', this.newGame.bind(this));
-    }
-
-    getFoodCollisionIndex(nextCoordinates) {
-        return this.foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
-    }
-
-    getNextCoordinates(initial, direction) {
-        let nextCoordinates = null;
-        switch (direction) {
-            case "UP":
-                nextCoordinates = { x: initial.x, y: initial.y - 1 };
-                break;
-            case "DOWN":
-                nextCoordinates = { x: initial.x, y: initial.y + 1 };
-                break;
-            case "LEFT":
-                nextCoordinates = { x: initial.x - 1, y: initial.y };
-                break;
-            case "RIGHT":
-                nextCoordinates = { x: initial.x + 1, y: initial.y };
-                break;
-            // arbitrary default to avoid fatal error
-            default:
-                // RIGHT
-                nextCoordinates = { x: initial.x + 1, y: initial.y };
-                console.log("Illegal direction passed to getNextCoordinates");
-                break;
-        }
-        return nextCoordinates;
-    }
-
-    incrementScore() {
-        document.getElementById('score').innerHTML = ++this.gameScore;
-    }
-
-    newGame() {
-        this.emptyAllCells();
-        this.removeGameOverDisplay();
-        this.snakeDirection = SNAKE_INIT_DIR;
-        this.foodCoordinates = this.spawnFood([]);
-        this.resetScore();
-        this.snakeCoordinates = this.spawnSnake();
-        this.gameIsPaused = false;
-        this.nextFrame();
-        document.getElementById('pause-btn-wrapper').style.zIndex = 2;
     }
 
     nextFrame() {
@@ -243,21 +126,32 @@ class SnakeGame {
         setTimeout(() => { this.frameRequest = window.requestAnimationFrame(this.nextFrame.bind(this)); }, FRAME_INTERVAL);
     }
 
-    removeGameOverDisplay() {
-        document.getElementById('play-again-text').removeEventListener('click', this.newGame.bind(this));
-        document.getElementById('game-over-display').style.opacity = "0";
-        document.getElementById('game-over-text').style.zIndex = -1;
-        document.getElementById('play-again-text').style.zIndex = -1;
+    newGame() {
+        this.emptyAllCells();
+        this.removeGameOverDisplay();
+        this.snakeDirection = SNAKE_INIT_DIR;
+        this.foodCoordinates = this.spawnFood([]);
+        this.resetScore();
+        this.snakeCoordinates = this.spawnSnake();
+        this.gameIsPaused = false;
+        this.nextFrame();
+        document.getElementById('pause-btn-wrapper').style.zIndex = 2;
     }
 
-    removeLastFromSnake(lastCoordinates) {
-        this.cells[lastCoordinates.x][lastCoordinates.y].setStatus("empty");
-        this.snakeCoordinates.pop();
-    }
-
-    resetScore() {
-        document.getElementById('score').innerHTML = 0;
-        this.gameScore = 0;
+    createCells() {
+        // define cell matrix
+        let cells = [];
+        for (var i = 0; i < GAME_DIMS.WIDTH_IN_CELLS; i++) {
+            cells[i] = [];
+            for (var j = 0; j < GAME_DIMS.HEIGHT_IN_CELLS; j++) {
+                // assign cell to corresponding index in the cells matrix
+                cells[i][j] = new Cell(i, j, this.cellSize, "empty");
+                // append newly created cell to game container
+                // TODO: append to local element and then add to DOM? efficiency question...
+                this.container.appendChild(cells[i][j].html);
+            }
+        }
+        return cells;
     }
 
     spawnFood(oldFoodCoordinates) {
@@ -297,6 +191,77 @@ class SnakeGame {
         return coordinates;
     }
 
+    eatFood(foodIndex) {
+        // remove food
+        this.foodCoordinates.splice(foodIndex, 1);
+        // respawn food
+        this.foodCoordinates = this.spawnFood(this.foodCoordinates);
+        // update score 
+        this.incrementScore();
+        // TODO: digest animation ?
+    }
+
+    incrementScore() {
+        document.getElementById('score').innerHTML = ++this.gameScore;
+    }
+
+    addNextToSnake(nextCoordinates) {
+        this.cells[nextCoordinates.x][nextCoordinates.y].setStatus("snake");
+        this.snakeCoordinates.unshift(nextCoordinates);
+    }
+
+    removeLastFromSnake(lastCoordinates) {
+        this.cells[lastCoordinates.x][lastCoordinates.y].setStatus("empty");
+        this.snakeCoordinates.pop();
+    }
+
+    evalSnakeDirection() {
+        let prevDirection = this.snakeDirection;
+        do {
+            this.snakeDirection = this.snakeDirectionStack.pop();
+        } while (conflict(prevDirection, this.snakeDirection));
+
+        if (this.snakeDirection === undefined) this.snakeDirection = prevDirection;
+    }
+
+    getFoodCollisionIndex(nextCoordinates) {
+        return this.foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
+    }
+
+    getNextCoordinates(initial, direction) {
+        let nextCoordinates = null;
+        switch (direction) {
+            case "UP":
+                nextCoordinates = { x: initial.x, y: initial.y - 1 };
+                break;
+            case "DOWN":
+                nextCoordinates = { x: initial.x, y: initial.y + 1 };
+                break;
+            case "LEFT":
+                nextCoordinates = { x: initial.x - 1, y: initial.y };
+                break;
+            case "RIGHT":
+                nextCoordinates = { x: initial.x + 1, y: initial.y };
+                break;
+            // arbitrary default to avoid fatal error
+            default:
+                // RIGHT
+                nextCoordinates = { x: initial.x + 1, y: initial.y };
+                console.log("Illegal direction passed to getNextCoordinates");
+                break;
+        }
+        return nextCoordinates;
+    }
+
+    fatalCollision(nextCoordinates) {
+        if (nextCoordinates.x > GAME_DIMS.WIDTH_IN_CELLS - 1 || nextCoordinates.y > GAME_DIMS.HEIGHT_IN_CELLS - 1
+            || nextCoordinates.y < 0 || nextCoordinates.x < 0
+            || this.snakeCoordinates.some(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y)) {
+            return true;
+        }
+        return false;
+    }
+
     togglePauseScreen() {
         let pauseDisplay = document.getElementById("pause-display");
         let pauseButton = null;
@@ -312,6 +277,37 @@ class SnakeGame {
             pauseButton.id = "pause-btn-special";
         }
     }
+
+    gameOver() {
+        window.cancelAnimationFrame(this.frameRequest);
+        this.gameIsPaused = true;
+        document.getElementById('pause-btn-wrapper').style.zIndex = 1;
+        document.getElementById('game-over-display').style.opacity = ".5";
+        setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
+        setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
+        document.getElementById('play-again-text').addEventListener('click', this.newGame.bind(this));
+    }
+
+    emptyAllCells() {
+        let cellsToClear = this.foodCoordinates.concat(this.snakeCoordinates);
+        this.foodCoordinates = [];
+        this.snakeCoordinates = [];
+        for (var i = 0, j = cellsToClear.length; i < j; i++) {
+            this.cells[cellsToClear[i].x][cellsToClear[i].y].setStatus("empty");
+        }
+    }
+
+    removeGameOverDisplay() {
+        document.getElementById('play-again-text').removeEventListener('click', this.newGame.bind(this));
+        document.getElementById('game-over-display').style.opacity = "0";
+        document.getElementById('game-over-text').style.zIndex = -1;
+        document.getElementById('play-again-text').style.zIndex = -1;
+    }
+
+    resetScore() {
+        document.getElementById('score').innerHTML = 0;
+        this.gameScore = 0;
+    }
 }
 
 // set up the game board and cells
@@ -321,9 +317,6 @@ window.onload = () => {
     let game = new SnakeGame(cellSize);
     game.run();
 }
-
-// If screen is resized, reload the page
-// window.onresize = function () { location.reload(); }
 
 // STYLE: is 'get' an appropriate prefix?
 function getScreenDimensions() {
