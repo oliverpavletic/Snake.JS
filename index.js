@@ -6,7 +6,7 @@
 
 const FRAME_INTERVAL = 100; // miliseconds
 const GAME_DIMS = { HEIGHT_IN_CELLS: 27, WIDTH_IN_CELLS: 48, MARGIN_IN_CELLS: 5, ASPECT_RATIO: (16 / 9) };
-const NUM_FOOD_PIECES = 1;
+const NUM_FOOD_PIECES = 10;
 const SNAKE_INIT_SIZE = 5;
 const SNAKE_INIT_DIR = "RIGHT";
 const VALID_STATUS = ["empty", "snake", "food"];
@@ -44,7 +44,6 @@ class Cell {
     }
 }
 
-// STYLE: binding this when calling all internal functions to avoid repeatedly calling "this?"
 class SnakeGame {
     constructor(cellSize) {
         this.cellSize = cellSize;
@@ -103,7 +102,6 @@ class SnakeGame {
 
         nextCoordinates = this.getNextCoordinates(firstCoordinates, this.snakeDirection);
 
-        // TODO: proper style for return and call function even if return value is not important and unused.
         if (this.fatalCollision(nextCoordinates)) return this.gameOver();
 
         // no fatal collisions, so add next cell to snake 
@@ -317,6 +315,7 @@ window.onload = () => {
     let game = new SnakeGame(cellSize);
     game.run();
 }
+
 
 // STYLE: is 'get' an appropriate prefix?
 function getScreenDimensions() {

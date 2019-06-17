@@ -1,3 +1,6 @@
+TODO: use setTimeout nextFrame instead of animationFrame
+TODO: clean up SnakeGame methods, think about the relationship between cell status and cell matrix... 
+
 TODO: declutter global scope
 
 TODO: if no internet, set default text
