@@ -48,18 +48,30 @@ class SnakeGame {
     constructor(cellSize) {
         this.cellSize = cellSize;
         this.container = document.querySelector('#snake-container');
-        this.cells = this.createCells();
-        this.snakeCoordinates = this.spawnSnake();
-        this.foodCoordinates = this.spawnFood([]);
+        this.cells = [];
+        this.snakeCoordinates = [];
+        this.foodCoordinates = [];
         this.snakeDirection = SNAKE_INIT_DIR;
         this.snakeDirectionStack = [];
+        this.intervalId = null;
         this.gameScore = 0;
         this.gameIsPaused = false;
-        this.frameRequest = null;
+        this.createCells();
+        this.spawnFood();
+        this.spawnSnake();
     }
 
     // starts the game
     run() {
+        this.addEventListeners(); // request new frame every FRAME_INTERVAL
+        this.startAnimation();
+    }
+
+    startAnimation() {
+        this.intervalId = setInterval(this.nextFrame.bind(this), FRAME_INTERVAL);
+    }
+
+    addEventListeners() {
         document.getElementById('pause-btn').addEventListener('click', this.togglePauseScreen.bind(this));
 
         // add event listener to enable snake direction change
@@ -88,7 +100,6 @@ class SnakeGame {
                 }
             }
         });
-        this.nextFrame();
     }
 
     nextFrame() {
@@ -117,20 +128,19 @@ class SnakeGame {
             // no food collision
             this.removeLastFromSnake(lastCoordinates);
         }
+    }
 
-        window.cancelAnimationFrame(this.frameRequest);
-
-        // request new frame every FRAME_INTERVAL
-        setTimeout(() => { this.frameRequest = window.requestAnimationFrame(this.nextFrame.bind(this)); }, FRAME_INTERVAL);
+    getFoodCollisionIndex(nextCoordinates) {
+        return this.foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
     }
 
     newGame() {
         this.emptyAllCells();
         this.removeGameOverDisplay();
         this.snakeDirection = SNAKE_INIT_DIR;
-        this.foodCoordinates = this.spawnFood([]);
+        this.spawnFood();
         this.resetScore();
-        this.snakeCoordinates = this.spawnSnake();
+        this.spawnSnake();
         this.gameIsPaused = false;
         this.nextFrame();
         document.getElementById('pause-btn-wrapper').style.zIndex = 2;
@@ -149,12 +159,11 @@ class SnakeGame {
                 this.container.appendChild(cells[i][j].html);
             }
         }
-        return cells;
+        this.cells = cells;
     }
 
-    spawnFood(oldFoodCoordinates) {
-        let newFoodCoordinates = oldFoodCoordinates;
-        let numExistingFoodPieces = newFoodCoordinates.length;
+    spawnFood() {
+        let numExistingFoodPieces = this.foodCoordinates.length;
         let randomCell = null;
 
         // spawn as many food pieces s.t the total pieces of food is always equal to NUM_FOOD_PIECES
@@ -163,13 +172,11 @@ class SnakeGame {
             // do-while to avoid duplicate food pieces and collisions with snake coordinates
             do {
                 randomCell = { x: Math.floor(Math.random() * GAME_DIMS.WIDTH_IN_CELLS), y: Math.floor(Math.random() * GAME_DIMS.HEIGHT_IN_CELLS) };
-            } while ((newFoodCoordinates.concat(this.snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
+            } while ((this.foodCoordinates.concat(this.snakeCoordinates)).some(e => e.x === randomCell.x && e.y === randomCell.y));
 
             this.cells[randomCell.x][randomCell.y].setStatus("food");
-            newFoodCoordinates.push(randomCell);
+            this.foodCoordinates.push(randomCell);
         }
-
-        return newFoodCoordinates;
     }
 
     spawnSnake() {
@@ -186,14 +193,14 @@ class SnakeGame {
             coordinates.push({ x: center.x - (i + 1), y: center.y });
         }
 
-        return coordinates;
+        this.snakeCoordinates = coordinates;
     }
 
     eatFood(foodIndex) {
         // remove food
         this.foodCoordinates.splice(foodIndex, 1);
         // respawn food
-        this.foodCoordinates = this.spawnFood(this.foodCoordinates);
+        this.spawnFood();
         // update score 
         this.incrementScore();
         // TODO: digest animation ?
@@ -217,13 +224,9 @@ class SnakeGame {
         let prevDirection = this.snakeDirection;
         do {
             this.snakeDirection = this.snakeDirectionStack.pop();
-        } while (conflict(prevDirection, this.snakeDirection));
+        } while (hasConflict(prevDirection, this.snakeDirection));
 
         if (this.snakeDirection === undefined) this.snakeDirection = prevDirection;
-    }
-
-    getFoodCollisionIndex(nextCoordinates) {
-        return this.foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
     }
 
     getNextCoordinates(initial, direction) {
@@ -261,6 +264,7 @@ class SnakeGame {
     }
 
     togglePauseScreen() {
+        clearInterval(this.intervalId);
         let pauseDisplay = document.getElementById("pause-display");
         let pauseButton = null;
         this.gameIsPaused = !this.gameIsPaused;
@@ -268,7 +272,7 @@ class SnakeGame {
             pauseButton = document.getElementById('pause-btn-special');
             pauseButton.id = "pause-btn";
             pauseDisplay.style.zIndex = "-1";
-            this.nextFrame();
+            this.startAnimation();
         } else { // pause game
             pauseDisplay.style.zIndex = "1";
             pauseButton = document.getElementById('pause-btn');
@@ -277,7 +281,6 @@ class SnakeGame {
     }
 
     gameOver() {
-        window.cancelAnimationFrame(this.frameRequest);
         this.gameIsPaused = true;
         document.getElementById('pause-btn-wrapper').style.zIndex = 1;
         document.getElementById('game-over-display').style.opacity = ".5";
@@ -406,7 +409,7 @@ function setupScreen(screenDimensions) {
 }
 
 // determines if there is a directional conflict
-function conflict(firstDirection, secondDirection) {
+function hasConflict(firstDirection, secondDirection) {
     if (firstDirection === "UP" && secondDirection === "DOWN") return true;
     if (firstDirection === "DOWN" && secondDirection === "UP") return true;
     if (firstDirection === "LEFT" && secondDirection === "RIGHT") return true;
