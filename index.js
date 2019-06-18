@@ -61,91 +61,6 @@ class SnakeGame {
         this.spawnSnake();
     }
 
-    // starts the game
-    run() {
-        this.addEventListeners(); // request new frame every FRAME_INTERVAL
-        this.startAnimation();
-    }
-
-    startAnimation() {
-        this.intervalId = setInterval(this.nextFrame.bind(this), FRAME_INTERVAL);
-    }
-
-    addEventListeners() {
-        document.getElementById('pause-btn').addEventListener('click', this.togglePauseScreen.bind(this));
-
-        // add event listener to enable snake direction change
-        window.addEventListener("keydown", e => {
-            if (e.key === "p") {
-                this.togglePauseScreen();
-            } else if (!this.gameIsPaused && !e.repeat) {
-                // arrow keys and WASD
-                switch (e.key) {
-                    case "ArrowUp":
-                    case "w":
-                        this.snakeDirectionStack.unshift("UP");
-                        break;
-                    case "ArrowDown":
-                    case "s":
-                        this.snakeDirectionStack.unshift("DOWN");
-                        break;
-                    case "ArrowLeft":
-                    case "a":
-                        this.snakeDirectionStack.unshift("LEFT");
-                        break;
-                    case "ArrowRight":
-                    case "d":
-                        this.snakeDirectionStack.unshift("RIGHT");
-                        break;
-                }
-            }
-        });
-    }
-
-    nextFrame() {
-        if (this.gameIsPaused) return;
-
-        const firstCoordinates = this.snakeCoordinates[0];
-        const lastCoordinates = this.snakeCoordinates[this.snakeCoordinates.length - 1];
-        let nextCoordinates = firstCoordinates;
-
-        this.evalSnakeDirection();
-
-        nextCoordinates = this.getNextCoordinates(firstCoordinates, this.snakeDirection);
-
-        if (this.fatalCollision(nextCoordinates)) return this.gameOver();
-
-        // no fatal collisions, so add next cell to snake 
-        this.addNextToSnake(nextCoordinates);
-
-        // handle food collision   
-        let foodIndex = this.getFoodCollisionIndex(nextCoordinates);
-
-        if (foodIndex !== -1) {
-            // food collision
-            this.eatFood(foodIndex);
-        } else {
-            // no food collision
-            this.removeLastFromSnake(lastCoordinates);
-        }
-    }
-
-    getFoodCollisionIndex(nextCoordinates) {
-        return this.foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
-    }
-
-    newGame() {
-        this.emptyAllCells();
-        this.removeGameOverDisplay();
-        this.snakeDirection = SNAKE_INIT_DIR;
-        this.spawnFood();
-        this.resetScore();
-        this.spawnSnake();
-        this.gameIsPaused = false;
-        this.nextFrame();
-        document.getElementById('pause-btn-wrapper').style.zIndex = 2;
-    }
-
     createCells() {
         // define cell matrix
         let cells = [];
@@ -196,28 +111,90 @@ class SnakeGame {
         this.snakeCoordinates = coordinates;
     }
 
-    eatFood(foodIndex) {
-        // remove food
-        this.foodCoordinates.splice(foodIndex, 1);
-        // respawn food
-        this.spawnFood();
-        // update score 
-        this.incrementScore();
-        // TODO: digest animation ?
+    // starts the game
+    run() {
+        this.addEventListeners(); // request new frame every FRAME_INTERVAL
+        this.startAnimation();
     }
 
-    incrementScore() {
-        document.getElementById('score').innerHTML = ++this.gameScore;
+    addEventListeners() {
+        document.getElementById('pause-btn').addEventListener('click', this.togglePauseScreen.bind(this));
+
+        // add event listener to enable snake direction change
+        window.addEventListener("keydown", e => {
+            if (e.key === "p") {
+                this.togglePauseScreen();
+            } else if (!this.gameIsPaused && !e.repeat) {
+                // arrow keys and WASD
+                switch (e.key) {
+                    case "ArrowUp":
+                    case "w":
+                        this.snakeDirectionStack.unshift("UP");
+                        break;
+                    case "ArrowDown":
+                    case "s":
+                        this.snakeDirectionStack.unshift("DOWN");
+                        break;
+                    case "ArrowLeft":
+                    case "a":
+                        this.snakeDirectionStack.unshift("LEFT");
+                        break;
+                    case "ArrowRight":
+                    case "d":
+                        this.snakeDirectionStack.unshift("RIGHT");
+                        break;
+                }
+            }
+        });
     }
 
-    addNextToSnake(nextCoordinates) {
-        this.cells[nextCoordinates.x][nextCoordinates.y].setStatus("snake");
-        this.snakeCoordinates.unshift(nextCoordinates);
+    togglePauseScreen() {
+        clearInterval(this.intervalId);
+        let pauseDisplay = document.getElementById("pause-display");
+        let pauseButton = null;
+        this.gameIsPaused = !this.gameIsPaused;
+        if (!this.gameIsPaused) { // restart game
+            pauseButton = document.getElementById('pause-btn-special');
+            pauseButton.id = "pause-btn";
+            pauseDisplay.style.zIndex = "-1";
+            this.startAnimation();
+        } else { // pause game
+            pauseDisplay.style.zIndex = "1";
+            pauseButton = document.getElementById('pause-btn');
+            pauseButton.id = "pause-btn-special";
+        }
     }
 
-    removeLastFromSnake(lastCoordinates) {
-        this.cells[lastCoordinates.x][lastCoordinates.y].setStatus("empty");
-        this.snakeCoordinates.pop();
+    startAnimation() {
+        this.intervalId = setInterval(this.nextFrame.bind(this), FRAME_INTERVAL);
+    }
+
+    nextFrame() {
+        if (this.gameIsPaused) return;
+
+        const firstCoordinates = this.snakeCoordinates[0];
+        const lastCoordinates = this.snakeCoordinates[this.snakeCoordinates.length - 1];
+        let nextCoordinates = firstCoordinates;
+
+        this.evalSnakeDirection();
+
+        nextCoordinates = this.getNextCoordinates(firstCoordinates, this.snakeDirection);
+
+        if (this.fatalCollision(nextCoordinates)) return this.gameOver();
+
+        // no fatal collisions, so add next cell to snake 
+        this.addNextToSnake(nextCoordinates);
+
+        // handle food collision   
+        let foodIndex = this.getFoodCollisionIndex(nextCoordinates);
+
+        if (foodIndex !== -1) {
+            // food collision
+            this.eatFood(foodIndex);
+        } else {
+            // no food collision
+            this.removeLastFromSnake(lastCoordinates);
+        }
     }
 
     evalSnakeDirection() {
@@ -248,7 +225,6 @@ class SnakeGame {
             default:
                 // RIGHT
                 nextCoordinates = { x: initial.x + 1, y: initial.y };
-                console.log("Illegal direction passed to getNextCoordinates");
                 break;
         }
         return nextCoordinates;
@@ -263,23 +239,6 @@ class SnakeGame {
         return false;
     }
 
-    togglePauseScreen() {
-        clearInterval(this.intervalId);
-        let pauseDisplay = document.getElementById("pause-display");
-        let pauseButton = null;
-        this.gameIsPaused = !this.gameIsPaused;
-        if (!this.gameIsPaused) { // restart game
-            pauseButton = document.getElementById('pause-btn-special');
-            pauseButton.id = "pause-btn";
-            pauseDisplay.style.zIndex = "-1";
-            this.startAnimation();
-        } else { // pause game
-            pauseDisplay.style.zIndex = "1";
-            pauseButton = document.getElementById('pause-btn');
-            pauseButton.id = "pause-btn-special";
-        }
-    }
-
     gameOver() {
         this.gameIsPaused = true;
         document.getElementById('pause-btn-wrapper').style.zIndex = 1;
@@ -287,6 +246,18 @@ class SnakeGame {
         setTimeout(() => document.getElementById('game-over-text').style.zIndex = 3, 1000);
         setTimeout(() => document.getElementById('play-again-text').style.zIndex = 3, 1000);
         document.getElementById('play-again-text').addEventListener('click', this.newGame.bind(this));
+    }
+
+    newGame() {
+        this.emptyAllCells();
+        this.removeGameOverDisplay();
+        this.snakeDirection = SNAKE_INIT_DIR;
+        this.spawnFood();
+        this.resetScore();
+        this.spawnSnake();
+        this.gameIsPaused = false;
+        this.nextFrame();
+        document.getElementById('pause-btn-wrapper').style.zIndex = 2;
     }
 
     emptyAllCells() {
@@ -309,6 +280,35 @@ class SnakeGame {
         document.getElementById('score').innerHTML = 0;
         this.gameScore = 0;
     }
+
+    addNextToSnake(nextCoordinates) {
+        this.cells[nextCoordinates.x][nextCoordinates.y].setStatus("snake");
+        this.snakeCoordinates.unshift(nextCoordinates);
+    }
+
+    getFoodCollisionIndex(nextCoordinates) {
+        return this.foodCoordinates.findIndex(e => e.x === nextCoordinates.x && e.y === nextCoordinates.y);
+    }
+
+    eatFood(foodIndex) {
+        // remove food
+        this.foodCoordinates.splice(foodIndex, 1);
+        // respawn food
+        this.spawnFood();
+        // update score 
+        this.incrementScore();
+        // TODO: digest animation ?
+    }
+
+    incrementScore() {
+        document.getElementById('score').innerHTML = ++this.gameScore;
+    }
+
+    removeLastFromSnake(lastCoordinates) {
+        this.cells[lastCoordinates.x][lastCoordinates.y].setStatus("empty");
+        this.snakeCoordinates.pop();
+    }
+
 }
 
 // set up the game board and cells
