@@ -1,4 +1,4 @@
-# Snake.JS
+# 🐍.JS
 
 ### An elegant implementation of the game 'Snake' built with only Vanilla JavaScript, HTML and CSS.
 
