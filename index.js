@@ -11,7 +11,7 @@ const GAME_DIMS = {
   MARGIN_IN_CELLS: 5,
   ASPECT_RATIO: 16 / 9
 };
-const NUM_FOOD_PIECES = 10;
+const NUM_FOOD_PIECES = 1;
 const SNAKE_INIT_SIZE = 5;
 const SNAKE_INIT_DIR = "RIGHT";
 const VALID_STATUS = ["empty", "snake", "food"];
